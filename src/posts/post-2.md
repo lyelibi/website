@@ -7,6 +7,9 @@ date: 2024-06-29
 eleventyNavigation:
   key: Post 2
   parent: Posts
+
+eleventyExcludeFromCollections: true
+
 ---
 
 ## Vix semper

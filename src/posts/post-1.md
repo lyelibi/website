@@ -6,6 +6,8 @@ author: Jane Doe
 eleventyNavigation:
   key: Post 1
   parent: Posts
+eleventyExcludeFromCollections: true
+
 ---
 
 [[toc]]
