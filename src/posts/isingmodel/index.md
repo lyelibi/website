@@ -60,7 +60,7 @@ This satisfies detailed balance, ensuring the system eventually reaches the Bolt
 
 The following dashboard summarizes the complete analysis, visualizing the system from four different analytical perspectives.
 
-<div class="full-bleed" style="--full-bleed-max:80vw; margin:0 auto;">
+<div class="full-bleed" style="--full-bleed-max:60vw; margin:0 auto;">
   <img src="/assets/images/isingmodel/isingmodel.webp"
        alt="Ising Model Dashboard">
 </div>
