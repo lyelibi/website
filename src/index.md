@@ -1,18 +1,36 @@
 ---
 layout: "post.njk"
-title: "Welcome to Academic Blog Template"
-description: "Eleventy academic blog template"
+title: "Lionel Yelibi"
+description: ""
 ---
 
-This is a template for academic blog. See the [GitHub Repository here](https://github.com/CondensedMilk7/eleventy-academic-template).
+## About Me
 
-It supports citations [@allport1935], powered by [markdown-it-biblatex](https://github.com/arothuis/markdown-it-biblatex),
-[table of contents](https://github.com/cmaas/markdown-it-table-of-contents),
-and LaTeX style math expressions with [markdown-it-mathjax3](https://github.com/tani/markdown-it-mathjax3#readme).
+I am a Statistical Sciences PhD candidate based in **Houston**, currently completing my degree under the supervision of **Prof. Tim Gebbie**.
 
-$\sqrt{3x-1}+(1+x)^2$
+### Research Focus: Spectral Representation Learning
 
-Who would need this? People who work in academic or educational fields
-and want to make their work available on the web.
+My PhD projects focus on **Spectral Representation Learning**, specifically:
 
-[bibliography]
+* Theoretical factor models and correlation matrices.
+* Statistical Analyses of emergence and extreme events in complex systems using unsupervised machine learning methods (i.e., Dimensionality Reduction, Matrix Decomposition, Data Clustering) with application to synthetic, economic, financial, and industrial data.
+
+### Professional Experience
+
+I was previously a **Lead Research Scientist** within Discover's (Now Capital One) Data Science Research team. My work focused on leveraging machine learning techniques to extract signals from large tabular datasets to predict risk for various financial products.
+
+Key areas of expertise included:
+
+* Feature noise cleaning and feature selection in high-dimensional regimes.
+* Embedding and clustering very large datasets.
+* Explainability, fairness, and bias estimation methods for both supervised and unsupervised models.
+* Supervised learning model development for credit acquisition and anti-money laundering.
+
+---
+
+### Get In Touch
+
+Feel free to reach out to me for potential **collaborations, internships, consulting, and other full-time work opportunities in AI.**
+
+<!-- [bibliography] -->
+<!-- Bibliography works like bibtex, just need to figure out where to store the actual bibtex file? -->
