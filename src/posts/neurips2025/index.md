@@ -28,10 +28,9 @@ While Deep Learning dominates perception tasks (vision, NLP), tree-based models 
 * **Key Finding:** The method incorporates a "recourse loss" into GBDT training, ensuring that executable actions exist for users to overturn unfavorable predictions.
 * **Commentary:** The idea here is clever: train a model with an additional recourse loss to ensure an actionable variable exists to overturn a prediction. Having worked in financial services, where models must be explainable (often via Shapley values), this paper is puzzling but promising. In the US, an adverse credit decision requires a "reason," usually linked to model features via Shapley values. However, important features aren't always actionable (e.g., a customer cannot instantly change their age or credit history length). This model goes further than policy requires by learning a "causal" intervention—essentially guaranteeing we can supply an action for the customer to improve their odds. The main risk is whether this makes the model prone to "gaming," but it represents a more proactive approach to ethical lending.
 
-<figure>
-  <img src="./recourse_poster.jpg" alt="Learning Gradient Boosted Decision Trees with Algorithmic Recourse Poster">
-  <figcaption>Learning Gradient Boosted Decision Trees with Algorithmic Recourse — Poster</figcaption>
-</figure>
+![Learning Gradient Boosted Decision Trees with Algorithmic Recourse Poster](./recourse_poster.jpg)
+
+*Learning Gradient Boosted Decision Trees with Algorithmic Recourse — Poster*
 
 ### Empowering Decision Trees Via Shape Function Branching
 
@@ -135,10 +134,9 @@ Graph Neural Networks (GNNs) are moving beyond small academic datasets. The focu
 * **Key Finding:** There is an inverse relationship between graph homophily and memorization; GNNs are forced to "memorize" heterophilic nodes (those connected to different labels) when the structure is uninformative.
 * **Commentary:** It is crucial to distinguish between overfitting (model-specific) and memorization (data-specific). The authors explain that GNNs struggle to predict labels for heterophilic connectivity (nodes connected to unlike labels) unless they have seen them during training—essentially forcing the model to memorize. This has significant implications for data selection. We might need scenarios where we learn models with high accuracy but low memorization, perhaps followed by post-training treatments. Furthermore, the difficulty GNNs have with heterophilic nodes may be connected to "oversquashing," a topological bottleneck addressed by other research at this conference.
 
-<figure>
-  <img src="./memorization_gnn_poster.jpg" alt="Memorization in GNNs Poster">
-  <figcaption>Memorization in Graph Neural Networks — Poster</figcaption>
-</figure>
+![Memorization in GNNs Poster](./memorization_gnn_poster.jpg)
+
+*Memorization in Graph Neural Networks — Poster*
 
 ### Taxonomy of Reduction Matrices for Graph Coarsening
 
@@ -147,10 +145,9 @@ Graph Neural Networks (GNNs) are moving beyond small academic datasets. The focu
 * **Key Finding:** The authors establish a taxonomy proving that structural information in graph coarsening is contained in the "lifting matrix," allowing for optimized reduction matrices.
 * **Commentary:** Given that graphs like the Bitcoin network (2 billion nodes) are too large for most infrastructure, we need methods to aggregate nodes into "super nodes" without losing critical information. This process involves "lifting" (mapping many nodes to few) and "reduction" (mapping few back to many). One can deduce that information loss primarily occurs during reduction. Traditionally, the reduction matrix was just the inverse of the lifting matrix. This work proposes learning them separately, prioritizing the reduction matrix to minimize information loss. This flexibility could also help mitigate GNN issues like oversmoothing and oversquashing by imposing specific constraints on the learned matrices.
 
-<figure>
-  <img src="./coarsening_poster.jpg" alt="Graph Coarsening Poster">
-  <figcaption>Taxonomy of Reduction Matrices for Graph Coarsening — Poster</figcaption>
-</figure>
+![Graph Coarsening Poster](./coarsening_poster.jpg)
+
+*Taxonomy of Reduction Matrices for Graph Coarsening — Poster*
 
 ---
 
@@ -188,10 +185,9 @@ The intersection of Large Language Models (LLMs) and Agent-Based Modeling (ABM) 
 * **Key Finding:** A unified simulation platform benchmarking AI agents across diverse economic scenarios and heterogeneous roles.
 * **Commentary:** The authors attempt to create a general-purpose economic simulator, but this generality is its weakness. Economic modeling requires carefully designed market clearing mechanisms specific to the problem being solved. Markets are where agents interact, and that interaction process must be rigorous. It is unlikely one can make this "general" without taking shortcuts on the interaction mechanisms. While the goal of a standardized testbed is noble, the complexity of correctly modeling diverse economic interactions likely makes a "one-size-fits-all" software solution infeasible.
 
-<figure>
-  <img src="./econgym_poster.jpg" alt="EconGym Poster">
-  <figcaption>EconGym — Poster</figcaption>
-</figure>
+![EconGym Poster](./econgym_poster.jpg)
+
+*EconGym — Poster*
 
 ### R&D-Agent-Quant: A Multi-Agent Framework for Data-Centric Factors and Model
 
