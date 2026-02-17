@@ -1,10 +1,25 @@
 ---
-title: "Clustering without Parameters: The Super-Paramagnetic Potts Model"
-date: 2023-10-29
+title: "Super-Paramagnetic Clustering (SPC)"
+summary: "Clustering without Parameters: The Super-Paramagnetic Potts Model"
+authors: []
 tags: ["machine-learning", "physics", "clustering", "python"]
-description: "Using the thermodynamics of the Potts model to solve complex clustering problems without specifying 'k'."
-layout: layouts/post.njk
-image: "/assets/images/pottsmodel/potts_spc_circles.webp"
+categories: [Computational Physics]
+date: 2026-02-17T00:00:00Z
+featured: true
+draft: false
+
+# Enable math rendering (KaTeX/MathJax)
+math: true
+# Optional: Featured image setup
+image:
+  caption: "Super-Paramagnetic Clustering (SPC)"
+  focal_point: "Smart"
+  preview_only: false
+  path: "/assets/images/pottsmodel/potts_spc_circles.webp"
+
+design:
+  # Choose how many columns the section has. Valid values: '1' or '2'.
+  columns: '2'
 ---
 
 In our previous posts, we explored the [Ising Model](/posts/ising-model) and the [$q$-state Potts Model](/posts/potts-model) on fixed 2D lattices. We observed how these systems undergo phase transitions, organizing themselves from chaotic noise into ordered domains as the temperature drops.
