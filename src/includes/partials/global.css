@@ -120,10 +120,9 @@ article img {
 .full-bleed {
   width: 100vw;
   position: relative;
-  left: 50%;
-  right: 50%;
-  margin-left: -50vw;
-  margin-right: -50vw;
+  /* center the element based on the viewport, not the parent container */
+  margin-left: calc(50% - 50vw);
+  /* we don't need left/right offsets any more */
   /* allow author to constrain via a CSS custom property */
   max-width: var(--full-bleed-max, 100vw);
 }
