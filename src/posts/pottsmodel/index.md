@@ -1,6 +1,5 @@
 ---
 title: "Potts Model"
-date: 2023-10-28
 summary: "A Cluster Monte Carlo Study of the q=10 Potts Model"
 authors: []
 tags: [Physics, Simulation, Python, Statistical Mechanics]
