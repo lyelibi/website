@@ -28,7 +28,10 @@ While Deep Learning dominates perception tasks (vision, NLP), tree-based models 
 * **Key Finding:** The method incorporates a "recourse loss" into GBDT training, ensuring that executable actions exist for users to overturn unfavorable predictions.
 * **Commentary:** The idea here is clever: train a model with an additional recourse loss to ensure an actionable variable exists to overturn a prediction. Having worked in financial services, where models must be explainable (often via Shapley values), this paper is puzzling but promising. In the US, an adverse credit decision requires a "reason," usually linked to model features via Shapley values. However, important features aren't always actionable (e.g., a customer cannot instantly change their age or credit history length). This model goes further than policy requires by learning a "causal" intervention—essentially guaranteeing we can supply an action for the customer to improve their odds. The main risk is whether this makes the model prone to "gaming," but it represents a more proactive approach to ethical lending.
 
-{{< figure src="recourse_poster.jpg" title="Learning Gradient Boosted Decision Trees with Algorithmic Recourse — Poster" >}}
+<figure>
+  <img src="./recourse_poster.jpg" alt="Learning Gradient Boosted Decision Trees with Algorithmic Recourse Poster">
+  <figcaption>Learning Gradient Boosted Decision Trees with Algorithmic Recourse — Poster</figcaption>
+</figure>
 
 ### Empowering Decision Trees Via Shape Function Branching
 
@@ -37,7 +40,10 @@ While Deep Learning dominates perception tasks (vision, NLP), tree-based models 
 * **Key Finding:** "Shape Generalized Trees" (SGT) split data based on learned univariate shape functions rather than axis-aligned thresholds, achieving higher accuracy with more compact trees.
 * **Commentary:** Decision trees do not need to be overly large if we re-imagine how splitting happens. While the classical CART algorithm builds axis-aligned splits, "ShapeCART" allows splitting on one variable with multiple thresholds, introducing non-linear decision boundaries. This aligns with recent research on oblique trees (which split using multiple variables) but keeps the trees more compact—an interesting property when considering embeddings from random forests. While ShapeCART performs significantly better in benchmarks, the real challenge is industrial relevance. In financial services, "big data" means 5–10 million rows and thousands of columns. New methods must be evaluated in that high-dimensionality regime to be truly viable.
 
-{{< figure src="shapecart_poster.jpg" title="Empowering Decision Trees Via Shape Function Branching — Poster" >}}
+<figure>
+  <img src="./shapecart_poster.jpg" alt="Empowering Decision Trees Via Shape Function Branching Poster">
+  <figcaption>Empowering Decision Trees Via Shape Function Branching — Poster</figcaption>
+</figure>
 
 ### TabSTAR: A Tabular Foundation Model for Tabular Data with Text Fields
 
@@ -46,7 +52,10 @@ While Deep Learning dominates perception tasks (vision, NLP), tree-based models 
 * **Key Finding:** TabSTAR fuses numerical encoders with text embedding models end-to-end, achieving SOTA results on tabular data mixed with unstructured text.
 * **Commentary:** There is a lot to like here. Historically, handling categorical variables involved simple one-hot encoding, often ignoring the rich semantics of text fields because integrating them was too labor-intensive. Tabular Foundation Models propose using Transformers to generalize feature associations across diverse datasets. A key innovation in TabSTAR is embedding not just features but also targets (dependent variables), using an interaction encoder that acts similarly to JEPA with an alignment loss. This takes advantage of the dependent variable during the training process, rather than just at the loss level. However, the evaluation is limited to 10,000 observations. This is a recurring theme with tabular deep learning: if they cannot scale to the massive datasets typical in banking, their industrial usefulness is severely limited.
 
-{{< figure src="tabstar_poster.jpg" title="TabSTAR — Poster" >}}
+<figure>
+  <img src="./tabstar_poster.jpg" alt="TabSTAR Poster">
+  <figcaption>TabSTAR — Poster</figcaption>
+</figure>
 
 ### A Faster Training Algorithm for Regression Trees with Linear Leaves
 
@@ -55,7 +64,10 @@ While Deep Learning dominates perception tasks (vision, NLP), tree-based models 
 * **Key Finding:** An adaptive optimization strategy switches between matrix inversion methods based on sample-to-dimension ratios, speeding up training for oblique trees.
 * **Commentary:** Optimizing oblique trees (which split on multiple variables to learn non-linear boundaries) usually requires the Tree Alternating Optimization (TAO) method, involving the inversion of correlation matrices. By utilizing the Sherman-Morrison formula, this work allows us to invert a potentially massive correlation matrix by handling a smaller one—a very useful mathematical identity. The method effectively manages the tradeoff between the number of samples at a node and the dimensionality of the dataset. Interestingly, complexity analysis reveals it is preferable to grow larger (deeper) trees for scalability using this method. The speedups are significant as dimensionality increases, and it accelerates classical CART training as well.
 
-{{< figure src="fast_tree_poster.jpg" title="A Faster Training Algorithm for Regression Trees with Linear Leaves — Poster" >}}
+<figure>
+  <img src="./fast_tree_poster.jpg" alt="A Faster Training Algorithm for Regression Trees with Linear Leaves Poster">
+  <figcaption>A Faster Training Algorithm for Regression Trees with Linear Leaves — Poster</figcaption>
+</figure>
 
 ### Hybrid Autoencoders for Tabular Data (TANDEM)
 
@@ -64,7 +76,10 @@ While Deep Learning dominates perception tasks (vision, NLP), tree-based models 
 * **Key Finding:** TANDEM combines a tree-based encoder (high-frequency patterns) with a neural network encoder (low-frequency patterns) to outperform SOTA in low-label settings.
 * **Commentary:** Spectral analysis reveals that neural networks favor low-frequency components, while tree models are better at capturing high-frequency components (which are significantly more prevalent in tabular data than in vision data). This architecture is clever because it stacks a neural network encoder with a tree-based encoder (OSDT) to leverage the representation power of both. Since tabular data lacks the spatial structure of images, finding methods that respect its unique "frequency" characteristics is a smart direction, particularly for synthetic data generation.
 
-{{< figure src="hybridautoencoder_poster.jpg" title="Hybrid Autoencoders for Tabular Data (TANDEM) — Poster" >}}
+<figure>
+  <img src="./hybridautoencoder_poster.jpg" alt="Hybrid Autoencoders for Tabular Data Poster">
+  <figcaption>Hybrid Autoencoders for Tabular Data (TANDEM) — Poster</figcaption>
+</figure>
 
 ### TabArena: A Living Benchmark for Machine Learning on Tabular Data
 
@@ -73,7 +88,10 @@ While Deep Learning dominates perception tasks (vision, NLP), tree-based models 
 * **Key Finding:** An open-source benchmark with 51 curated datasets to accurately compare Deep Learning methods against tree-based models.
 * **Commentary:** Similar to TabSTAR, the evaluation here is limited to small datasets with relatively low dimensionality. While it aims to be the "ImageNet of tables," it does not challenge the status of tree models as the standard for massive datasets. Until benchmarks incorporate the "huge" scale data found in banking and tech (millions of rows, thousands of columns), their utility for industrial decision-making remains limited.
 
-{{< figure src="tabarena_poster.jpg" title="TabArena — Poster" >}}
+<figure>
+  <img src="./tabarena_poster.jpg" alt="TabArena Poster">
+  <figcaption>TabArena — Poster</figcaption>
+</figure>
 
 
 ### SpEx: A Spectral Approach to Explainable Clustering
@@ -83,7 +101,10 @@ While Deep Learning dominates perception tasks (vision, NLP), tree-based models 
 * **Key Finding:** SpEx approximates complex reference clustering using an interpretable decision tree by optimizing a multi-way cut objective.
 * **Commentary:** It turns out that trees grown by decision tree models can be mapped to graphs—a simple realization with profound implications. The paper argues that classical CART trees are incentivized to split samples from separate classes but not penalized for splitting samples from the *same* class, which fragments clusters. SpEx generates a graph of the data, learns its clustering, and trains a decision tree using this graph. This effectively produces a tree model that respects the underlying cluster structure better than standard methods, validating the study of tree models as graphs.
 
-{{< figure src="spex_poster.jpg" title="SpEx: A Spectral Approach to Explainable Clustering — Poster" >}}
+<figure>
+  <img src="./spex_poster.jpg" alt="SpEx Poster">
+  <figcaption>SpEx: A Spectral Approach to Explainable Clustering — Poster</figcaption>
+</figure>
 
 ### Autoencoding Random Forests (RFAE)
 
@@ -92,7 +113,10 @@ While Deep Learning dominates perception tasks (vision, NLP), tree-based models 
 * **Key Finding:** RFAE introduces a method to use Random Forests as autoencoders by utilizing the "Breiman kernel" for encoding and a constrained optimization process for decoding, effectively handling mixed-type tabular data.
 * **Commentary:** This is arguably one of the most exciting developments of the conference. Since we can map decision trees to graphs, the entire graph analytics toolset becomes available to better understand the latent features induced by tree models. If you can extract a graph from an XGBoost model (technically multiple graphs), you can calculate adjacency matrices and use spectral tools (e.g., decompositions) or graph embedding techniques to understand the expressive power of decision trees. This approach allows us to investigate axis-aligned trees, oblique trees, and SGT trees through a graph-theoretical lens. For industrial practitioners relying on tree ensembles, this offers a major leap in interpretability and feature extraction.
 
-{{< figure src="rfae_poster.jpg" title="Autoencoding Random Forests (RFAE) — Poster" >}}
+<figure>
+  <img src="./rfae_poster.jpg" alt="Autoencoding Random Forests Poster">
+  <figcaption>Autoencoding Random Forests (RFAE) — Poster</figcaption>
+</figure>
 
 ---
 
@@ -107,7 +131,10 @@ Graph Neural Networks (GNNs) are moving beyond small academic datasets. The focu
 * **Key Finding:** The authors created a comprehensive ETL pipeline modeling the Bitcoin blockchain as a temporal heterogeneous graph to analyze evolving trading behaviors.
 * **Commentary:** The primary challenge with this kind of graph is scale. With 2 billion nodes, running graph analytics becomes a massive hurdle due to memory constraints and the computing costs of GNN algorithms. The authors suggest sampling methods adapted to downstream tasks, such as the forest fire model. Being able to run analytics on the Bitcoin transaction network is incredibly useful for detecting co-payment or co-trade patterns and identifying subgraphs linked to money laundering. Additionally, it should be possible to learn risk patterns: classical risk models often use engineered features that map customer-merchant interactions over time. We should be able to develop similar models on a sample of the Bitcoin network—provided the network is actually used as intended (a payment network backed by a stable currency).
 
-{{< figure src="bitcoin_graph_poster.jpg" title="The Temporal Graph of Bitcoin Transactions — Poster" >}}
+<figure>
+  <img src="./bitcoin_graph_poster.jpg" alt="Bitcoin Graph Poster">
+  <figcaption>The Temporal Graph of Bitcoin Transactions — Poster</figcaption>
+</figure>
 
 ### Memorization in Graph Neural Networks
 
@@ -116,7 +143,10 @@ Graph Neural Networks (GNNs) are moving beyond small academic datasets. The focu
 * **Key Finding:** There is an inverse relationship between graph homophily and memorization; GNNs are forced to "memorize" heterophilic nodes (those connected to different labels) when the structure is uninformative.
 * **Commentary:** It is crucial to distinguish between overfitting (model-specific) and memorization (data-specific). The authors explain that GNNs struggle to predict labels for heterophilic connectivity (nodes connected to unlike labels) unless they have seen them during training—essentially forcing the model to memorize. This has significant implications for data selection. We might need scenarios where we learn models with high accuracy but low memorization, perhaps followed by post-training treatments. Furthermore, the difficulty GNNs have with heterophilic nodes may be connected to "oversquashing," a topological bottleneck addressed by other research at this conference.
 
-{{< figure src="memorization_gnn_poster.jpg" title="Memorization in Graph Neural Networks — Poster" >}}
+<figure>
+  <img src="./memorization_gnn_poster.jpg" alt="Memorization in GNNs Poster">
+  <figcaption>Memorization in Graph Neural Networks — Poster</figcaption>
+</figure>
 
 ### Taxonomy of Reduction Matrices for Graph Coarsening
 
@@ -125,7 +155,10 @@ Graph Neural Networks (GNNs) are moving beyond small academic datasets. The focu
 * **Key Finding:** The authors establish a taxonomy proving that structural information in graph coarsening is contained in the "lifting matrix," allowing for optimized reduction matrices.
 * **Commentary:** Given that graphs like the Bitcoin network (2 billion nodes) are too large for most infrastructure, we need methods to aggregate nodes into "super nodes" without losing critical information. This process involves "lifting" (mapping many nodes to few) and "reduction" (mapping few back to many). One can deduce that information loss primarily occurs during reduction. Traditionally, the reduction matrix was just the inverse of the lifting matrix. This work proposes learning them separately, prioritizing the reduction matrix to minimize information loss. This flexibility could also help mitigate GNN issues like oversmoothing and oversquashing by imposing specific constraints on the learned matrices.
 
-{{< figure src="coarsening_poster.jpg" title="Taxonomy of Reduction Matrices for Graph Coarsening — Poster" >}}
+<figure>
+  <img src="./coarsening_poster.jpg" alt="Graph Coarsening Poster">
+  <figcaption>Taxonomy of Reduction Matrices for Graph Coarsening — Poster</figcaption>
+</figure>
 
 ---
 
@@ -140,7 +173,10 @@ The intersection of Large Language Models (LLMs) and Agent-Based Modeling (ABM) 
 * **Key Finding:** A framework that replaces hand-coded agent rules with Graph Diffusion Networks, allowing simulations to be differentiable and automatically calibrated.
 * **Commentary:** This is a fascinating approach to scalability. Instead of running computationally expensive ABMs fully, the authors simulate a small number of steps and use the output to train a diffusion model. This diffusion model, which is cheaper to run, learns the internal dynamics and generates plausible next steps. Crucially, they associate a GNN with the diffusion model to incorporate agent connectivity. This allows the model to capture complex patterns (tested here on Predator-Prey models). It raises an interesting possibility: perhaps we only need to calibrate ABMs for short time series and let diffusion models take over to produce high-fidelity synthetic data.
 
-{{< figure src="abmdiffusion_poster.jpg" title="Learning Individual Behavior in Agent-Based Models with Graph Diffusion Networks — Poster" >}}
+<figure>
+  <img src="./abmdiffusion_poster.jpg" alt="ABM Diffusion Poster">
+  <figcaption>Learning Individual Behavior in Agent-Based Models with Graph Diffusion Networks — Poster</figcaption>
+</figure>
 
 ### TwinMarket: Scalable Behavioral and Social Simulation for Financial Markets
 
@@ -149,7 +185,11 @@ The intersection of Large Language Models (LLMs) and Agent-Based Modeling (ABM) 
 * **Key Finding:** TwinMarket uses LLM-driven agents with cognitive processes (Belief, Desire, Intention) interacting in a dynamic social network to reproduce market phenomena.
 * **Commentary:** Unlike classical Ising trading models that use a lattice structure, this model constructs a similarity graph based on trading allocations over time. Agents are fed social media posts from their most similar neighbors, making the interaction process implicit. We hope LLM agents can extract richer information than random agents, but the evaluation here is unclear. There is a comparison with empirical data for a 1,000-agent simulation, but it is ambiguous what is actually being evaluated. My criticism remains that the market clearing mechanism—the core of how agents interact and prices form—seems neglected in favor of focusing on the novelty of LLM agents.
 
-{{< figure src="twinmarket_poster.jpg" title="TwinMarket: Scalable Behavioral and Social Simulation for Financial Markets — Poster" >}}
+
+<figure>
+  <img src="./twinmarket_poster.jpg" alt="TwinMarket Poster">
+  <figcaption>TwinMarket — Poster</figcaption>
+</figure>
 
 ### EconGym: A Scalable AI Testbed with Diverse Economic Tasks
 
@@ -158,7 +198,10 @@ The intersection of Large Language Models (LLMs) and Agent-Based Modeling (ABM) 
 * **Key Finding:** A unified simulation platform benchmarking AI agents across diverse economic scenarios and heterogeneous roles.
 * **Commentary:** The authors attempt to create a general-purpose economic simulator, but this generality is its weakness. Economic modeling requires carefully designed market clearing mechanisms specific to the problem being solved. Markets are where agents interact, and that interaction process must be rigorous. It is unlikely one can make this "general" without taking shortcuts on the interaction mechanisms. While the goal of a standardized testbed is noble, the complexity of correctly modeling diverse economic interactions likely makes a "one-size-fits-all" software solution infeasible.
 
-{{< figure src="econgym_poster.jpg" title="EconGym: A Scalable AI Testbed with Diverse Economic Tasks — Poster" >}}
+<figure>
+  <img src="./econgym_poster.jpg" alt="EconGym Poster">
+  <figcaption>EconGym — Poster</figcaption>
+</figure>
 
 ### R&D-Agent-Quant: A Multi-Agent Framework for Data-Centric Factors and Model
 
@@ -167,7 +210,10 @@ The intersection of Large Language Models (LLMs) and Agent-Based Modeling (ABM) 
 * **Key Finding:** An end-to-end framework using LLM agents to automate quantitative finance R&D, from factor discovery to model design.
 * **Commentary:** The authors present a table of results where their factor-based models outperform classical auto-regressive time-series models. However, it is unclear exactly what ideas they are testing. Are these factors derived from legitimate financial logic, or is the system training "out of thin air"? While using agents to build factors is a compelling concept, one must scrutinize the paper to ensure the improvements are robust and not artifacts of overfitting or look-ahead bias, common pitfalls in automated trading research.
 
-{{< figure src="rdagentquant_poster.jpg" title="R&D-Agent-Quant: A Multi-Agent Framework for Data-Centric Factors and Model — Poster" >}}
+<figure>
+  <img src="./rdagentquant_poster.jpg" alt="R&D-Agent-Quant Poster">
+  <figcaption>R&D-Agent-Quant — Poster</figcaption>
+</figure>
 
 ---
 
@@ -182,7 +228,11 @@ This section covers the mathematical backbone of the conference: new correlation
 * **Key Finding:** SHGR is a differentiable estimator for maximal correlation, robust to noise and capable of capturing non-linear dependencies.
 * **Commentary:** New correlation coefficients appear every few years, but often their benefits are unclear. However, in industrial contexts (e.g., using Mutual Information for feature grouping), there is a clear need for non-linear dependency measures. What distinguishes SHGR is the rigorous protocol established to test it: capturing non-linear patterns, computing cost, and robustness to noise/extreme values. It appears to outperform most existing metrics on these criteria. This is exciting, but like all theoretical metrics, it needs to be implemented and evaluated in a production environment to prove it offers a tangible performance improvement.
 
-{{< figure src="shgr_poster.jpg" title="SHGR: A Generalized Maximal Correlation Coefficient — Poster" >}}
+
+<figure>
+  <img src="./shgr_poster.jpg" alt="SHGR Poster">
+  <figcaption>SHGR — Poster</figcaption>
+</figure>
 
 ### STNet: Spectral Transformation Network for Solving Operator Eigenvalue Problem
 
@@ -191,7 +241,10 @@ This section covers the mathematical backbone of the conference: new correlation
 * **Key Finding:** STNet accelerates high-dimensional eigenvalue problems using deep learning to dynamically reshape the operator's spectrum.
 * **Commentary:** This is an eigenfunction solver that attempts to gain stability and efficiency via neural networks. However, the critical question is scalability. The poster does not explicitly discuss whether the problems tackled are large-scale, which is the primary bottleneck for these solvers. While the method tackles the "curse of dimensionality," verification via the full paper is needed to see if it holds up against industrial-scale physics problems.
 
-{{< figure src="stnet_poster.jpg" title="STNet: Spectral Transformation Network for Solving Operator Eigenvalue Problem — Poster" >}}
+<figure>
+  <img src="./stnet_poster.jpg" alt="STNet Poster">
+  <figcaption>STNet — Poster</figcaption>
+</figure>
 
 ---
 
