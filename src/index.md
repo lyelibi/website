@@ -31,6 +31,3 @@ Key areas of expertise included:
 ### Get In Touch
 
 Feel free to reach out to me for potential **collaborations, internships, consulting, and other full-time work opportunities in AI.**
-
-<!-- [bibliography] -->
-<!-- Bibliography works like bibtex, just need to figure out where to store the actual bibtex file? -->
