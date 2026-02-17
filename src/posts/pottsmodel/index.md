@@ -1,10 +1,26 @@
 ---
-title: "Beyond the Ising Model: A Cluster Monte Carlo Study of the q=10 Potts Model"
+title: "Potts Model"
 date: 2023-10-28
-tags: ["physics", "simulation", "python", "algorithms"]
-description: "Exploring first-order phase transitions and fractal geometry using the Swendsen-Wang algorithm."
-layout: layouts/post.njk
-image: /assets/images/pottsmodel/pottsmodel.webp
+summary: "A Cluster Monte Carlo Study of the q=10 Potts Model"
+authors: []
+tags: [Physics, Simulation, Python, Statistical Mechanics]
+categories: [Computational Physics]
+date: 2026-02-17T00:00:00Z
+featured: true
+draft: false
+
+# Enable math rendering (KaTeX/MathJax)
+math: true
+# Optional: Featured image setup
+image:
+  caption: "A Cluster Monte Carlo Study of the q=10 Potts Model"
+  focal_point: "Smart"
+  preview_only: false
+  path: "/assets/images/pottsmodel/pottsmodel.webp"
+
+design:
+  # Choose how many columns the section has. Valid values: '1' or '2'.
+  columns: '2'
 ---
 
 In statistical mechanics, the Ising model is the standard introduction to phase transitions, describing spins that can be either "up" or "down" ($s_i \in \{-1, +1\}$). While powerful, it represents a specific universality class characterized by continuous, second-order phase transitions. To explore richer physics, such as discontinuous first-order transitions involving latent heat, we must generalize the model.

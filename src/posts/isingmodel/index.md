@@ -1,7 +1,7 @@
 ---
-title: "Exploring Ferromagnetism: A Computational Study of the 2D Ising Model"
-subtitle: "From microscopic spins to macroscopic phase transitions: a complete simulation."
-summary: "An in-depth look at the 2D Ising model, visualizing domain growth, phase transitions, and the free energy landscape using Python and Numba."
+title: "Ising Model"
+subtitle: ""
+summary: "Exploring Ferromagnetism: A Computational Study of the 2D Ising Model"
 authors: []
 tags: [Physics, Simulation, Python, Statistical Mechanics]
 categories: [Computational Physics]
