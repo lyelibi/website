@@ -1,42 +1,11 @@
 ---
-title: NeurIPS 2025
-subtitle: 
-
-# Summary for listings and search engines
-summary: Curated list of research posted from the 39th Annual Conference on Neural Information Processing Systems (NeurIPS 2025).
-
-# Link this post with a project
-projects: []
-
-# Date published
-date: "2025-12-13T00:00:00Z"
-
-# Date updated (optional)
-lastmod: "2025-12-13T00:00:00Z"
-
-# Is this an unpublished draft?
-draft: false
-
-# Show this page in the Featured widget?
-featured: false
-
-# Featured image
-# Place an image named `featured.jpg/png` in this page's folder and customize its options here.
-# image:
-#   caption: 'Image credit: [**Unsplash**](https://unsplash.com/)'
-#   focal_point: ""
-#   placement: 2
-#   preview_only: false
-
-authors:
-- admin
-
-tags:
-- Research
-- Analysis
-
-categories:
-- Blog
+title: "NeurIPS 2025"
+description: "Curated list of research posted from the 39th Annual Conference on Neural Information Processing Systems (NeurIPS 2025)."
+date: 2025-12-31
+author: Lionel Yelibi
+eleventyNavigation:
+  key: neu2025
+  parent: Posts
 ---
 
 # NeurIPS 2025: Research Highlights & Commentary
