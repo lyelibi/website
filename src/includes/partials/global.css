@@ -116,6 +116,23 @@ article img {
   max-width: 100%;
 }
 
+/* utility for breaking images out of the article column */
+.full-bleed {
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  max-width: 100vw;
+}
+
+.full-bleed img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
 .thumbnail-container img {
   max-width: 100%;
 }

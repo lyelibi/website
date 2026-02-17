@@ -60,13 +60,9 @@ This satisfies detailed balance, ensuring the system eventually reaches the Bolt
 
 The following dashboard summarizes the complete analysis, visualizing the system from four different analytical perspectives.
 
-<style>
-  .article-container {
-    overflow: visible !important;
-  }
-</style>
-
-![Ising Model Dashboard](/assets/images/isingmodel/isingmodel.webp){style="width:100%;height:auto;display:block;"}
+<div class="full-bleed">
+  <img src="/assets/images/isingmodel/isingmodel.webp" alt="Ising Model Dashboard">
+</div>
 
 
 ### 1. Microscopic Dynamics and Domain Growth
