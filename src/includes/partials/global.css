@@ -124,13 +124,16 @@ article img {
   right: 50%;
   margin-left: -50vw;
   margin-right: -50vw;
-  max-width: 100vw;
+  /* allow author to constrain via a CSS custom property */
+  max-width: var(--full-bleed-max, 100vw);
 }
 
 .full-bleed img {
   width: 100%;
   height: auto;
   display: block;
+  /* image itself can also respect the same variable if desired */
+  max-width: var(--full-bleed-max, 100vw);
 }
 
 .thumbnail-container img {
