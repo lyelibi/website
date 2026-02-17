@@ -1,10 +1,25 @@
 ---
-title: "Topological Phase Transitions: The XY Model and Vortex Unbinding"
-date: 2023-10-31
+title: "The XY Model and Vortex Unbinding"
+summary: "Moving beyond discrete spins to explore continuous symmetry, topological defects, and the Kosterlitz-Thouless transition."
+authors: []
 tags: ["physics", "simulation", "python", "topology", "nobel-prize"]
-description: "Moving beyond discrete spins to explore continuous symmetry, topological defects, and the Kosterlitz-Thouless transition."
-layout: layouts/post.njk
-image: "/assets/images/xymodel/xy.webp"
+categories: [Computational Physics]
+date: 2026-02-17T00:00:00Z
+featured: true
+draft: false
+
+# Enable math rendering (KaTeX/MathJax)
+math: true
+# Optional: Featured image setup
+image:
+  caption: "The XY Model and Vortex Unbinding"
+  focal_point: "Smart"
+  preview_only: false
+  path: "/assets/images/xymodel/xy.webp"
+
+design:
+  # Choose how many columns the section has. Valid values: '1' or '2'.
+  columns: '2'
 ---
 
 In our previous explorations of statistical mechanics, we looked at systems with discrete symmetries: the [Ising Model](/posts/ising-model) (up/down spins) and the [Potts Model](/posts/potts-model) ($q$ distinct colors). In both cases, phase transitions occurred when thermal noise overcame the energy benefit of neighboring spins aligning into one of these discrete states.
