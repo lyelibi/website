@@ -56,17 +56,53 @@
     const data = {
         nodes: [
             { id: "Core", label: "Lionel Yelibi", group: "center", radius: 22, url: "/" },
-            { id: "ALC", label: "ALC Project", group: "project", radius: 15, url: "/" },
-            { id: "FSPC", label: "FSPC Project", group: "project", radius: 15, url: "/" },
-            { id: "Stats", label: "Spectral Learning", group: "skill", radius: 10, url: "#" },
-            { id: "Finance", label: "Quantitative Finance", group: "skill", radius: 10, url: "#" }
+            // Projects
+            { id: "Ising", label: "Ising Model", group: "project", radius: 15, url: "/posts/isingmodel/" },
+            { id: "Potts", label: "Potts Model", group: "project", radius: 15, url: "/posts/pottsmodel/" },
+            { id: "XY", label: "XY Model", group: "project", radius: 15, url: "/posts/xymodel/" },
+            { id: "SPC", label: "Super-Paramagnetic Clustering", group: "project", radius: 15, url: "/posts/spc/" },
+            { id: "IsingFin", label: "Ising Model in Finance", group: "project", radius: 15, url: "/posts/isingmodel_finance/" },
+            { id: "NeurIPS", label: "NeurIPS 2025", group: "project", radius: 15, url: "/posts/neurips2025/" },
+            // Skills
+            { id: "CompPhysics", label: "Computational Physics", group: "skill", radius: 10, url: "#" },
+            { id: "PhaseTransitions", label: "Phase Transitions", group: "skill", radius: 10, url: "#" },
+            { id: "Topology", label: "Topology", group: "skill", radius: 10, url: "#" },
+            { id: "ML", label: "Machine Learning", group: "skill", radius: 10, url: "#" },
+            { id: "Finance", label: "Quantitative Finance", group: "skill", radius: 10, url: "#" },
+            { id: "ABM", label: "Agent-Based Modeling", group: "skill", radius: 10, url: "#" },
+            { id: "Econophysics", label: "Econophysics", group: "skill", radius: 10, url: "#" },
+            { id: "GraphAnalytics", label: "Graph Analytics", group: "skill", radius: 10, url: "#" }
         ],
         links: [
-            { source: "Core", target: "ALC" },
-            { source: "Core", target: "FSPC" },
-            { source: "ALC", target: "Stats" },
-            { source: "FSPC", target: "Finance" },
-            { source: "FSPC", target: "Stats" }
+            // Core connections
+            { source: "Core", target: "Ising" },
+            { source: "Core", target: "SPC" },
+            { source: "Core", target: "IsingFin" },
+            { source: "Core", target: "NeurIPS" },
+            // Ising Model connections
+            { source: "Ising", target: "CompPhysics" },
+            { source: "Ising", target: "PhaseTransitions" },
+            // Potts Model (related to Ising)
+            { source: "Potts", target: "Ising" },
+            { source: "Potts", target: "PhaseTransitions" },
+            { source: "Potts", target: "CompPhysics" },
+            // XY Model (extends Ising/Potts)
+            { source: "XY", target: "Ising" },
+            { source: "XY", target: "Potts" },
+            { source: "XY", target: "Topology" },
+            { source: "XY", target: "PhaseTransitions" },
+            // SPC (applies Potts to ML)
+            { source: "SPC", target: "Potts" },
+            { source: "SPC", target: "ML" },
+            { source: "SPC", target: "GraphAnalytics" },
+            // Ising Finance (applies Ising to finance)
+            { source: "IsingFin", target: "Ising" },
+            { source: "IsingFin", target: "Econophysics" },
+            { source: "IsingFin", target: "Finance" },
+            { source: "IsingFin", target: "ABM" },
+            // NeurIPS (covers various topics)
+            { source: "NeurIPS", target: "ML" },
+            { source: "NeurIPS", target: "GraphAnalytics" }
         ]
     };
 
