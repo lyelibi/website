@@ -72,7 +72,7 @@ The results were striking. The topology of the trader network fundamentally dict
 
 The scale-free network produced the most realistic financial data. Because "hubs" stabilize opinion, this network had a much higher critical temperature ($T_c \approx 5.23$) than the others.
 
-<div class="full-bleed" style="--full-bleed-max:60vw; margin:0 auto;">
+<div class="full-bleed" style="--full-bleed-max:40vw; margin:0 auto;">
   <img src="/assets/images/isingmodel_finance/isingmodel_abm_scalefree.webp"
        alt="Dashboard showing the Scale-Free Ising Market simulation results.">
 </div>
@@ -91,14 +91,14 @@ This spontaneously reproduces the most important statistical characteristic of r
 
 In contrast, the other topologies produced less realistic markets at criticality.
 
-<div class="full-bleed" style="--full-bleed-max:60vw; margin:0 auto;">
+<div class="full-bleed" style="--full-bleed-max:40vw; margin:0 auto;">
   <img src="/assets/images/isingmodel_finance/isingmodel_abm_lattice.webp"
        alt="Dashboard showing the Lattice Ising Market results.">
 </div>
 
 *Fig 2: The Lattice Market. Note the bimodal ("two-humped") distribution in the bottom row.*
 
-<div class="full-bleed" style="--full-bleed-max:60vw; margin:0 auto;">
+<div class="full-bleed" style="--full-bleed-max:40vw; margin:0 auto;">
   <img src="/assets/images/isingmodel_finance/isingmodel_abm_random.webp"
        alt="Dashboard showing the Random Graph Ising Market results.">
 </div>
