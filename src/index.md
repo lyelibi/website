@@ -2,7 +2,13 @@
 layout: "post.njk"
 title: "Lionel Yelibi"
 description: ""
+design:
+    columns: '2'
 ---
+
+## Click Me!
+
+{% networkGraph %}
 
 ## About Me
 

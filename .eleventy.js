@@ -27,6 +27,11 @@ module.exports = function (eleventyConfig) {
 
   eleventyConfig.addShortcode("year", () => `${new Date().getFullYear()}`);
 
+  eleventyConfig.addShortcode("networkGraph", () => {
+    const fs = require("fs");
+    return fs.readFileSync("./src/includes/components/network-graph.njk", "utf8");
+  });
+
   eleventyConfig.addNunjucksAsyncFilter(
     "jsmin",
     async function (code, callback) {
