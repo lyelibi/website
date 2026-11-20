@@ -1,169 +1,898 @@
-<style>
-    :root {
-        --link-color: rgba(150, 150, 150, 0.2);
-        --text-color: #f8fafc;
-        --highlight: #60a5fa;
-    }
+<!--
+  Research knowledge graph — drop-in replacement for the old project graph.
+  Same framework: inline <style>, #graph-container / #project-network, D3 v7, one IIFE.
 
+  To edit content, change only section 1 of the script (THEMES / NODES / LINKS):
+    • type: "project" (papers, posts, ongoing work) or "concept" (methods & ideas)
+    • theme: one theme id, or an array — the first is the "home" cluster,
+             extra ones pull the node toward a bridge position between clusters
+    • status (projects): "published" | "preprint" | "post" | "ongoing"
+    • url: internal post ("/posts/…/") or external link (opens in a new tab)
+  Projects are linked to their theme(s) automatically, and any concept with no link
+  inside its own theme is attached to its theme hub, so LINKS only needs the content edges.
+-->
+<style>
     #graph-container {
+        --text-color: #f8fafc;
+        --muted: #94a3b8;
+        --halo: rgba(15, 23, 42, 0.92);
+        --panel-bg: rgba(15, 23, 42, 0.82);
+        --panel-border: rgba(148, 163, 184, 0.2);
+        --ls: 1;                                /* label scale, set from zoom level */
         width: 100%;
-        height: 600px;
+        height: clamp(540px, 82vh, 860px);
         background: transparent;
-        cursor: crosshair;
         position: relative;
         z-index: 10;
         overflow: hidden;
+        font-family: inherit;
+        color: var(--text-color);
+        user-select: none;
+        -webkit-user-select: none;
     }
 
-    .node circle {
-        stroke: #0f172a;
-        stroke-width: 2px;
+    #project-network {
+        width: 100%;
+        height: 100%;
+        display: block;
+        cursor: grab;
+        touch-action: pan-x pan-y;   /* one finger scrolls the page; two fingers zoom the graph */
+    }
+    #project-network:active { cursor: grabbing; }
+
+    /* ---------- clusters ---------- */
+    #graph-container .hull {
+        fill-opacity: 0.055;
+        stroke-opacity: 0.16;
+        stroke-width: 1.5px;
+        stroke-linejoin: round;
+        transition: opacity 0.3s;
+    }
+
+    /* ---------- links ---------- */
+    #graph-container .link {
+        stroke-width: 1.2px;
+        stroke-opacity: 0.28;
+        transition: stroke-opacity 0.25s, stroke-width 0.25s;
+    }
+    #graph-container .link.cross { stroke: #94a3b8; stroke-opacity: 0.14; stroke-dasharray: 3 4; }
+    #graph-container .link.spoke { stroke: #cbd5e1; stroke-opacity: 0.16; stroke-width: 1.8px; }
+
+    /* ---------- nodes ---------- */
+    #graph-container .node { cursor: pointer; touch-action: none; transition: opacity 0.25s; }
+    #graph-container .node circle { stroke: #0f172a; stroke-width: 1.5px; }
+    #graph-container .node-project circle,
+    #graph-container .node-theme circle { stroke-width: 2px; }
+    #graph-container .node.ongoing circle {
+        fill-opacity: 0.18;
+        stroke-width: 2.4px;
+        stroke-dasharray: 4 3;
     }
 
     /* Professional, subtle pulsing for the 'Me' node */
     @keyframes pulse {
-        0% { stroke-width: 2px; stroke-opacity: 1; }
-        50% { stroke-width: 6px; stroke-opacity: 0.5; }
+        0%   { stroke-width: 2px; stroke-opacity: 1; }
+        50%  { stroke-width: 7px; stroke-opacity: 0.45; }
         100% { stroke-width: 2px; stroke-opacity: 1; }
     }
-    .node-center circle {
-        animation: pulse 3s infinite ease-in-out;
-    }
+    #graph-container .node-center circle { stroke: #38bdf8; animation: pulse 3s infinite ease-in-out; }
 
-    .node text {
+    /* ---------- labels (counter-scaled so they stay readable at any zoom) ---------- */
+    #graph-container .node text {
         fill: var(--text-color);
-        font-family: inherit;
-        font-size: 14px;
+        font-size: calc(12.5px * var(--ls));
         font-weight: 400;
         pointer-events: none;
-        text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+        paint-order: stroke;
+        stroke: var(--halo);
+        stroke-width: calc(3.5px * var(--ls));
+        stroke-linejoin: round;
+        transition: opacity 0.25s;
     }
+    #graph-container .node-center text  { font-size: calc(18px * var(--ls)); font-weight: 600; }
+    #graph-container .node-thesis text  { font-size: calc(14px * var(--ls)); font-weight: 500; font-style: italic; }
+    #graph-container .node-theme text   { font-size: calc(15.5px * var(--ls)); font-weight: 600; letter-spacing: 0.01em; }
+    #graph-container .node-project text { font-size: calc(13px * var(--ls)); }
+    #graph-container .node-concept text { font-size: calc(11.5px * var(--ls)); fill: #cbd5e1; opacity: 0; }
+    #project-network.zoomed .node-concept text { opacity: 1; }
+    #project-network.overview .node-project text,
+    #project-network.overview .node-thesis text { opacity: 0; }
 
-    .link {
-        stroke: var(--link-color);
-        transition: stroke 0.3s;
+    /* theme names sit on the outer rim of each cluster, like regions on a map */
+    #graph-container .region-label {
+        font-size: calc(13.5px * var(--ls));
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        pointer-events: none;
+        paint-order: stroke;
+        stroke: var(--halo);
+        stroke-width: calc(4px * var(--ls));
+        stroke-linejoin: round;
+        transition: opacity 0.25s;
+    }
+    #project-network.has-highlight .region-label    { opacity: 0.3; }
+    #project-network.has-highlight .region-label.hl { opacity: 1; }
+
+    /* ---------- highlight state ---------- */
+    #project-network.has-highlight .node        { opacity: 0.13; }
+    #project-network.has-highlight .node.hl     { opacity: 1; }
+    #project-network.has-highlight .node.hl text { opacity: 1; }
+    #project-network.has-highlight .link        { stroke-opacity: 0.035; }
+    #project-network.has-highlight .link.hl     { stroke-opacity: 0.9; stroke-width: 2px; }
+    #project-network.has-highlight .link.cross.hl { stroke: #e2e8f0; stroke-opacity: 0.7; }
+    #project-network.has-highlight .hull        { opacity: 0.35; }
+
+    /* ---------- overlay panels ---------- */
+    #graph-container .kg-panel {
+        position: absolute;
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        border-radius: 10px;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        font-size: 13px;
+        line-height: 1.45;
+        z-index: 2;
+    }
+    #graph-container .kg-legend { top: 12px; left: 12px; padding: 8px 12px; max-width: 260px; }
+    #graph-container .kg-legend summary {
+        cursor: pointer; font-weight: 600; color: var(--muted); font-size: 12px;
+        text-transform: uppercase; letter-spacing: 0.06em; list-style: none;
+    }
+    #graph-container .kg-legend summary::-webkit-details-marker { display: none; }
+    #graph-container .kg-legend summary::after { content: " ▾"; }
+    #graph-container .kg-legend details:not([open]) summary::after { content: " ▸"; }
+    #graph-container .kg-legend ul { list-style: none; margin: 8px 0 0; padding: 0; }
+    #graph-container .kg-legend li button {
+        all: unset; cursor: pointer; display: flex; align-items: center; gap: 8px;
+        padding: 3px 6px; margin: 0 -6px; border-radius: 6px; width: 100%; box-sizing: border-box;
+        color: var(--text-color); font-size: 13px;
+    }
+    #graph-container .kg-legend li button:hover,
+    #graph-container .kg-legend li button.active { background: rgba(148, 163, 184, 0.16); }
+    #graph-container .kg-dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+    #graph-container .kg-key {
+        display: flex; gap: 14px; margin-top: 8px; padding-top: 8px;
+        border-top: 1px solid var(--panel-border); color: var(--muted); font-size: 12px;
+    }
+    #graph-container .kg-key span { display: flex; align-items: center; gap: 6px; }
+    #graph-container .kg-key .ring { width: 10px; height: 10px; border-radius: 50%; border: 2px dashed #cbd5e1; }
+    #graph-container .kg-key .fill { width: 12px; height: 12px; border-radius: 50%; background: #cbd5e1; }
+
+    #graph-container .kg-tools { top: 12px; right: 12px; display: flex; gap: 6px; padding: 6px; }
+    #graph-container .kg-tools input {
+        all: unset; width: 150px; padding: 4px 8px; border-radius: 6px; font-size: 13px;
+        background: rgba(148, 163, 184, 0.12); color: var(--text-color);
+    }
+    #graph-container .kg-tools input::placeholder { color: var(--muted); }
+    #graph-container .kg-tools button {
+        all: unset; cursor: pointer; width: 28px; height: 28px; text-align: center; line-height: 28px;
+        border-radius: 6px; font-size: 16px; color: var(--text-color); background: rgba(148, 163, 184, 0.12);
+    }
+    #graph-container .kg-tools button:hover { background: rgba(148, 163, 184, 0.28); }
+
+    #graph-container .kg-card { left: 12px; bottom: 12px; padding: 10px 14px; max-width: 340px; pointer-events: auto; }
+    #graph-container .kg-card .title { font-weight: 600; font-size: 15px; }
+    #graph-container .kg-card .meta  { color: var(--muted); font-size: 12px; margin: 2px 0 4px; }
+    #graph-container .kg-card .desc  { font-size: 13px; }
+    #graph-container .kg-card a      { color: #60a5fa; text-decoration: none; font-weight: 500; }
+    #graph-container .kg-card a:hover { text-decoration: underline; }
+    #graph-container .kg-card .hint  { color: var(--muted); font-size: 12.5px; }
+
+    #graph-container .kg-hint {
+        left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 10px 16px;
+        opacity: 0; transition: opacity 0.3s; pointer-events: none; font-size: 14px;
+    }
+    #graph-container .kg-hint.show { opacity: 1; }
+
+    @media (max-width: 640px) {
+        #graph-container .kg-tools input { display: none; }
+        #graph-container .kg-card { right: 12px; max-width: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        #graph-container .node-center circle { animation: none; }
+        #graph-container .node, #graph-container .link, #graph-container .node text { transition: none; }
     }
 </style>
 
 <div id="graph-container">
-    <svg id="project-network" style="width:100%; height:100%"></svg>
+    <svg id="project-network" role="img" aria-label="Interactive knowledge graph of research interests"></svg>
 </div>
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
 
 <script>
-(function() {
-    const data = {
-        nodes: [
-            { id: "Core", label: "Lionel Yelibi", group: "center", radius: 22, url: "/" },
-            // Projects
-            { id: "Ising", label: "Ising Model", group: "project", radius: 15, url: "/posts/isingmodel/" },
-            { id: "Potts", label: "Potts Model", group: "project", radius: 15, url: "/posts/pottsmodel/" },
-            { id: "XY", label: "XY Model", group: "project", radius: 15, url: "/posts/xymodel/" },
-            { id: "SPC", label: "Super-Paramagnetic Clustering", group: "project", radius: 15, url: "/posts/spc/" },
-            { id: "IsingFin", label: "Ising Model in Finance", group: "project", radius: 15, url: "/posts/isingmodel_finance/" },
-            { id: "NeurIPS", label: "NeurIPS 2025", group: "project", radius: 15, url: "/posts/neurips2025/" },
-            // Skills
-            { id: "CompPhysics", label: "Computational Physics", group: "skill", radius: 10, url: "#" },
-            { id: "PhaseTransitions", label: "Phase Transitions", group: "skill", radius: 10, url: "#" },
-            { id: "Topology", label: "Topology", group: "skill", radius: 10, url: "#" },
-            { id: "ML", label: "Machine Learning", group: "skill", radius: 10, url: "#" },
-            { id: "Finance", label: "Quantitative Finance", group: "skill", radius: 10, url: "#" },
-            { id: "ABM", label: "Agent-Based Modeling", group: "skill", radius: 10, url: "#" },
-            { id: "Econophysics", label: "Econophysics", group: "skill", radius: 10, url: "#" },
-            { id: "GraphAnalytics", label: "Graph Analytics", group: "skill", radius: 10, url: "#" }
-        ],
-        links: [
-            // Core connections
-            { source: "Core", target: "Ising" },
-            { source: "Core", target: "SPC" },
-            { source: "Core", target: "IsingFin" },
-            { source: "Core", target: "NeurIPS" },
-            // Ising Model connections
-            { source: "Ising", target: "CompPhysics" },
-            { source: "Ising", target: "PhaseTransitions" },
-            // Potts Model (related to Ising)
-            { source: "Potts", target: "Ising" },
-            { source: "Potts", target: "PhaseTransitions" },
-            { source: "Potts", target: "CompPhysics" },
-            // XY Model (extends Ising/Potts)
-            { source: "XY", target: "Ising" },
-            { source: "XY", target: "Potts" },
-            { source: "XY", target: "Topology" },
-            { source: "XY", target: "PhaseTransitions" },
-            // SPC (applies Potts to ML)
-            { source: "SPC", target: "Potts" },
-            { source: "SPC", target: "ML" },
-            { source: "SPC", target: "GraphAnalytics" },
-            // Ising Finance (applies Ising to finance)
-            { source: "IsingFin", target: "Ising" },
-            { source: "IsingFin", target: "Econophysics" },
-            { source: "IsingFin", target: "Finance" },
-            { source: "IsingFin", target: "ABM" },
-            // NeurIPS (covers various topics)
-            { source: "NeurIPS", target: "ML" },
-            { source: "NeurIPS", target: "GraphAnalytics" }
-        ]
+(function () {
+    /* =====================================================================
+       1. CONTENT — edit here
+       ===================================================================== */
+
+    // Order matters: neighbours in this list sit next to each other on the ring.
+    const THEMES = [
+        { id: "physics",    label: "Statistical Physics",            color: "#f472b6",
+          desc: "Spin models, phase transitions and the Monte Carlo machinery behind them." },
+        { id: "clustering", label: "Clustering",                     color: "#4ade80",
+          desc: "Likelihood- and physics-based clustering of correlated, noisy systems." },
+        { id: "filtering",  label: "Information Filtering Networks", color: "#c084fc",
+          desc: "Extracting sparse, meaningful structure from dense correlation matrices." },
+        { id: "graphml",    label: "Graph Learning",                 color: "#60a5fa",
+          desc: "When and how graph structure makes data learnable." },
+        { id: "signals",    label: "Time Series & Signals",          color: "#2dd4bf",
+          desc: "Non-stationary signals, state-space models and synthetic data." },
+        { id: "finance",    label: "Quantitative Finance",           color: "#fbbf24",
+          desc: "Portfolio construction, estimation risk and systematic strategies." },
+        { id: "complexity", label: "Econophysics & Complex Systems", color: "#f87171",
+          desc: "Economies and markets as systems of interacting agents." }
+    ];
+
+    const CENTER = {
+        id: "Core", label: "Lionel Yelibi", type: "center", url: "/",
+        desc: "Physicist by training; PhD candidate at the University of Cape Town working where graph theory, network science and quantitative finance meet."
     };
 
+    const NODES = [
+        // ---- PhD thesis (sits near the centre) ----
+        { id: "Thesis", label: "PhD Thesis", type: "thesis", status: "ongoing",
+          desc: "The Geometry of Interaction: Structure Estimation, Filtering, and Learnability in Complex Systems (working title)." },
+
+        // ---- Statistical physics ----
+        { id: "Ising", label: "Ising Model", type: "project", theme: "physics", status: "post", url: "/posts/isingmodel/",
+          desc: "The canonical model of interacting binary spins and the order–disorder transition." },
+        { id: "Potts", label: "Potts Model", type: "project", theme: "physics", status: "post", url: "/posts/pottsmodel/",
+          desc: "The q-state generalisation of Ising, and the engine behind Super-Paramagnetic Clustering." },
+        { id: "XY", label: "XY Model", type: "project", theme: "physics", status: "post", url: "/posts/xymodel/",
+          desc: "Continuous planar spins, vortices and the Berezinskii–Kosterlitz–Thouless transition." },
+        { id: "XYLeadLag", label: "Lead–Lag Networks from XY Spins", type: "project", theme: ["physics", "signals"], status: "ongoing",
+          desc: "Generalising SPC to continuous spins, and reading directed lead–lag networks from phase differences via a stochastic Kuramoto model." },
+        { id: "PhaseTransitions", label: "Phase Transitions", type: "concept", theme: "physics" },
+        { id: "MonteCarlo", label: "Monte Carlo Methods", type: "concept", theme: "physics" },
+        { id: "CompPhysics", label: "Computational Physics", type: "concept", theme: "physics" },
+        { id: "Topology", label: "Topological Phase Transitions", type: "concept", theme: "physics" },
+        { id: "Kuramoto", label: "Kuramoto Synchronisation", type: "concept", theme: "physics" },
+        { id: "nVector", label: "n-Vector Models", type: "concept", theme: "physics" },
+        { id: "Boltzmann", label: "Energy-Based Models", type: "concept", theme: "physics" },
+
+        // ---- Clustering ----
+        { id: "SPC", label: "Super-Paramagnetic Clustering", type: "project", theme: "clustering", status: "published", url: "/posts/spc/",
+          desc: "Fast Super-Paramagnetic Clustering (f-SPC): clustering with the Potts model. Published in Physica A." },
+        { id: "ALC", label: "Agglomerative Likelihood Clustering", type: "project", theme: "clustering", status: "published",
+          url: "https://arxiv.org/abs/1908.00951",
+          desc: "A fast agglomerative maximiser of the Giada–Marsili likelihood for clustering correlated time series." },
+        { id: "ALCMerge", label: "ALC Merge-Acceptance Rule", type: "project", theme: "clustering", status: "ongoing",
+          desc: "Follow-up work: an information-theoretic reading of the likelihood behind ALC's merge decisions." },
+        { id: "ConsensusALC", label: "Consensus Clustering Graphs", type: "project", theme: ["clustering", "filtering"], status: "ongoing",
+          desc: "Ensembles of stochastic clustering runs as information-filtering graphs, cut by the Giada–Marsili likelihood." },
+        { id: "GiadaMarsili", label: "Giada–Marsili Likelihood", type: "concept", theme: "clustering" },
+        { id: "Agglomerative", label: "Hierarchical Clustering", type: "concept", theme: "clustering" },
+        { id: "Ensemble", label: "Ensemble Methods", type: "concept", theme: "clustering" },
+        { id: "SolutionVariance", label: "Solution Variance", type: "concept", theme: "clustering" },
+        { id: "Spectral", label: "Spectral Clustering", type: "concept", theme: "clustering" },
+        { id: "Community", label: "Community Detection", type: "concept", theme: "clustering" },
+        { id: "Streaming", label: "Incremental Clustering", type: "concept", theme: "clustering" },
+        { id: "TSClustering", label: "Time-Series Clustering", type: "concept", theme: "clustering" },
+        { id: "InfoTheory", label: "Information Theory", type: "concept", theme: "clustering" },
+
+        // ---- Information filtering networks ----
+        { id: "aTMFG", label: "a-TMFG", type: "project", theme: "filtering", status: "preprint",
+          url: "https://arxiv.org/abs/2603.09564",
+          desc: "Scalable Triangulated Maximally Filtered Graphs via approximate nearest neighbours — TMFG at million-node scale." },
+        { id: "CliqueStability", label: "Stability of Filtered Graphs", type: "project", theme: ["filtering", "finance"], status: "ongoing",
+          desc: "How stable are TMFG/MFCF cliques under resampling — and what does that mean for portfolio allocation?" },
+        { id: "TMFG", label: "TMFG", type: "concept", theme: "filtering" },
+        { id: "MFCF", label: "Maximally Filtered Clique Forests", type: "concept", theme: "filtering" },
+        { id: "PlanarGraphs", label: "Planar Graphs", type: "concept", theme: "filtering" },
+        { id: "Chordal", label: "Chordal Graphs", type: "concept", theme: "filtering" },
+        { id: "ANN", label: "Approximate Nearest Neighbours", type: "concept", theme: "filtering" },
+        { id: "kNNGraph", label: "kNN Graphs", type: "concept", theme: "filtering" },
+        { id: "GLasso", label: "Graphical Lasso", type: "concept", theme: "filtering" },
+        { id: "Precision", label: "Sparse Precision Matrices", type: "concept", theme: "filtering" },
+        { id: "Shrinkage", label: "Covariance Shrinkage", type: "concept", theme: "filtering" },
+        { id: "RMT", label: "Random Matrix Theory", type: "concept", theme: "filtering" },
+        { id: "CorrEstimation", label: "Correlation Estimation", type: "concept", theme: "filtering" },
+
+        // ---- Graph learning ----
+        { id: "NeurIPS", label: "NeurIPS 2025", type: "project", theme: "graphml", status: "post", url: "/posts/neurips2025/",
+          desc: "Blog post." },
+        { id: "MSIMAP", label: "MS-IMAP", type: "project", theme: "graphml", status: "preprint",
+          url: "https://arxiv.org/abs/2406.02778",
+          desc: "A multi-scale graph embedding approach for interpretable manifold learning." },
+        { id: "GraphRecovery", label: "Graph Recovery under GMRFs", type: "project", theme: ["graphml", "filtering"], status: "ongoing",
+          desc: "Can sparse graph estimators recover the generating graph across very different topologies?" },
+        { id: "GraphsHelp", label: "When Do Graphs Help?", type: "project", theme: "graphml", status: "ongoing",
+          desc: "Graph neural networks versus graphless models on data generated by Gaussian Markov random fields." },
+        { id: "HNN", label: "Homological Neural Networks", type: "project", theme: "graphml", status: "ongoing",
+          desc: "Sparse, topology-derived feed-forward modules (MFCF → HNN) for relational deep learning." },
+        { id: "InteractionGraphs", label: "Interaction Graphs of Targets", type: "project", theme: "graphml", status: "ongoing",
+          desc: "Describing how a target is built from its inputs as order-stratified (hyper)graphs, and what their topology means for learnability." },
+        { id: "NNPruning", label: "Graph-Based Network Pruning", type: "project", theme: "graphml", status: "ongoing",
+          desc: "Using graph structure to decide which weights of a neural network to keep." },
+        { id: "ML", label: "Machine Learning", type: "concept", theme: "graphml" },
+        { id: "GraphAnalytics", label: "Graph Analytics", type: "concept", theme: "graphml" },
+        { id: "GNN", label: "Graph Neural Networks", type: "concept", theme: "graphml" },
+        { id: "GMRF", label: "Gaussian Markov Random Fields", type: "concept", theme: "graphml" },
+        { id: "Laplacian", label: "Laplacian Spectra", type: "concept", theme: "graphml" },
+        { id: "GSP", label: "Graph Signal Processing", type: "concept", theme: "graphml" },
+        { id: "SBM", label: "Stochastic Block Models", type: "concept", theme: "graphml" },
+        { id: "KTrees", label: "k-Trees", type: "concept", theme: "graphml" },
+        { id: "Hypergraphs", label: "Hypergraphs", type: "concept", theme: "graphml" },
+        { id: "Manifold", label: "Manifold Learning", type: "concept", theme: "graphml" },
+        { id: "Embeddings", label: "Embeddings", type: "concept", theme: "graphml" },
+        { id: "RelationalDL", label: "Relational Deep Learning", type: "concept", theme: "graphml" },
+        { id: "Sparsity", label: "Sparse Architectures", type: "concept", theme: "graphml" },
+        { id: "AlgTopology", label: "Algebraic Topology", type: "concept", theme: "graphml" },
+        { id: "Learnability", label: "Learnability", type: "concept", theme: "graphml" },
+        { id: "DistanceCorr", label: "Distance Correlation", type: "concept", theme: "graphml" },
+
+        // ---- Time series & signals ----
+        { id: "LeadLag", label: "Lead–Lag Relationships", type: "concept", theme: "signals" },
+        { id: "DFM", label: "Dynamic Factor Models", type: "concept", theme: "signals" },
+        { id: "Kalman", label: "Kalman Filtering", type: "concept", theme: "signals" },
+        { id: "Wavelets", label: "Wavelets & STFT", type: "concept", theme: "signals" },
+        { id: "Fourier", label: "Fourier Synchronisation", type: "concept", theme: "signals" },
+        { id: "OU", label: "Ornstein–Uhlenbeck Processes", type: "concept", theme: "signals" },
+        { id: "NonStationarity", label: "Non-Stationarity", type: "concept", theme: "signals" },
+        { id: "SyntheticData", label: "Synthetic Data Generators", type: "concept", theme: "signals" },
+
+        // ---- Quantitative finance ----
+        { id: "StrategyCorr", label: "Correlation Structure of Strategies", type: "project", theme: "finance", status: "ongoing",
+          desc: "Large-scale searches over trading strategies, treating the strategy-return correlation matrix as the object of study." },
+        { id: "Portfolio", label: "Portfolio Allocation", type: "concept", theme: "finance" },
+        { id: "Diversification", label: "Limits of Diversification", type: "concept", theme: "finance" },
+        { id: "HRP", label: "Hierarchical Risk Parity", type: "concept", theme: "finance" },
+        { id: "MinVar", label: "Minimum-Variance Portfolios", type: "concept", theme: "finance" },
+        { id: "FactorModels", label: "Factor Models", type: "concept", theme: "finance" },
+        { id: "MultipleTesting", label: "Multiple Testing", type: "concept", theme: "finance" },
+        { id: "Backtesting", label: "Backtesting & Simulation", type: "concept", theme: "finance" },
+        { id: "Breadth", label: "Effective Breadth", type: "concept", theme: "finance" },
+        { id: "CreditRisk", label: "Credit Risk", type: "concept", theme: "finance" },
+        { id: "Microstructure", label: "Market Microstructure", type: "concept", theme: "finance" },
+        { id: "Bandits", label: "Bandits & RL", type: "concept", theme: "finance" },
+
+        // ---- Econophysics & complex systems ----
+        { id: "IsingFin", label: "Ising Model in Finance", type: "project", theme: ["complexity", "physics"], status: "post",
+          url: "/posts/isingmodel_finance/",
+          desc: "Interacting-spin models as a lens on collective behaviour in markets." },
+        { id: "Matchups", label: "Matchups in Multi-Strategy Games", type: "project", theme: "complexity", status: "ongoing",
+          desc: "Agents on an evolving interaction network choosing strategies whose pairwise matchups decide who wins." },
+        { id: "TxFlow", label: "Transaction-Flow Networks", type: "project", theme: ["complexity", "finance"], status: "ongoing",
+          desc: "Modelling an economy as a network of transaction flows, with applications to credit risk and stress testing." },
+        { id: "ECIInvest", label: "Economic Complexity & Investing", type: "project", theme: "complexity", status: "ongoing",
+          desc: "Can economic complexity inform long-horizon capital allocation? Staged empirical tests plus a firm-level simulation." },
+        { id: "ABM", label: "Agent-Based Modelling", type: "concept", theme: "complexity" },
+        { id: "InteractingAgents", label: "Interacting Agents", type: "concept", theme: "complexity" },
+        { id: "Collective", label: "Collective Behaviour", type: "concept", theme: "complexity" },
+        { id: "EvolvingNetworks", label: "Evolving Networks", type: "concept", theme: "complexity" },
+        { id: "GameTheory", label: "Game Theory", type: "concept", theme: "complexity" },
+        { id: "ECI", label: "Economic Complexity", type: "concept", theme: "complexity" },
+        { id: "FinNetworks", label: "Financial Networks", type: "concept", theme: "complexity" },
+        { id: "SystemicRisk", label: "Systemic Risk", type: "concept", theme: "complexity" },
+        { id: "StressTesting", label: "Stress Simulation", type: "concept", theme: "complexity" }
+    ];
+
+    // Content edges. Project → theme links are added automatically.
+    const LINKS = [
+        // thesis
+        ["Core", "Thesis"], ["Thesis", "filtering"], ["Thesis", "clustering"], ["Thesis", "graphml"],
+        ["Thesis", "ALC"], ["Thesis", "aTMFG"], ["Thesis", "ConsensusALC"],
+
+        // physics
+        ["Ising", "PhaseTransitions"], ["Ising", "MonteCarlo"], ["Ising", "CompPhysics"], ["Ising", "Boltzmann"],
+        ["Potts", "Ising"], ["Potts", "PhaseTransitions"], ["Potts", "MonteCarlo"], ["Potts", "CompPhysics"],
+        ["XY", "Ising"], ["XY", "Potts"], ["XY", "Topology"], ["XY", "PhaseTransitions"], ["XY", "nVector"],
+        ["XYLeadLag", "XY"], ["XYLeadLag", "SPC"], ["XYLeadLag", "Kuramoto"], ["XYLeadLag", "LeadLag"],
+        ["Kuramoto", "Fourier"], ["nVector", "Embeddings"],
+
+        // clustering
+        ["SPC", "Potts"], ["SPC", "MonteCarlo"], ["SPC", "Boltzmann"], ["SPC", "ML"], ["SPC", "GraphAnalytics"],
+        ["SPC", "TSClustering"],
+        ["ALC", "GiadaMarsili"], ["ALC", "Agglomerative"], ["ALC", "TSClustering"], ["ALC", "RMT"],
+        ["ALC", "Streaming"], ["ALC", "aTMFG"],
+        ["ALCMerge", "ALC"], ["ALCMerge", "GiadaMarsili"], ["ALCMerge", "InfoTheory"],
+        ["ConsensusALC", "ALC"], ["ConsensusALC", "Ensemble"], ["ConsensusALC", "SolutionVariance"],
+        ["ConsensusALC", "Spectral"], ["ConsensusALC", "Community"], ["ConsensusALC", "CliqueStability"],
+        ["ConsensusALC", "GiadaMarsili"],
+        ["GiadaMarsili", "InfoTheory"], ["SolutionVariance", "Ensemble"], ["Spectral", "Laplacian"],
+        ["Community", "SBM"],
+
+        // filtering
+        ["aTMFG", "TMFG"], ["aTMFG", "ANN"], ["aTMFG", "kNNGraph"], ["aTMFG", "PlanarGraphs"],
+        ["aTMFG", "GraphRecovery"],
+        ["TMFG", "PlanarGraphs"], ["TMFG", "Chordal"], ["TMFG", "MFCF"], ["MFCF", "Chordal"],
+        ["CliqueStability", "TMFG"], ["CliqueStability", "MFCF"], ["CliqueStability", "GLasso"],
+        ["CliqueStability", "Shrinkage"], ["CliqueStability", "CorrEstimation"], ["CliqueStability", "Portfolio"],
+        ["CliqueStability", "HRP"], ["CliqueStability", "MinVar"], ["CliqueStability", "FactorModels"],
+        ["CliqueStability", "GMRF"],
+        ["GLasso", "Precision"], ["Precision", "GMRF"], ["RMT", "CorrEstimation"], ["Shrinkage", "CorrEstimation"],
+        ["kNNGraph", "ANN"],
+
+        // graph learning
+        ["NeurIPS", "ML"], ["NeurIPS", "GraphAnalytics"],
+        ["MSIMAP", "Manifold"], ["MSIMAP", "Embeddings"], ["MSIMAP", "Laplacian"], ["MSIMAP", "GraphAnalytics"],
+        ["GraphRecovery", "GMRF"], ["GraphRecovery", "SBM"], ["GraphRecovery", "KTrees"], ["GraphRecovery", "kNNGraph"],
+        ["GraphRecovery", "Laplacian"], ["GraphRecovery", "SyntheticData"],
+        ["GraphsHelp", "GraphRecovery"], ["GraphsHelp", "GNN"], ["GraphsHelp", "GMRF"], ["GraphsHelp", "GSP"],
+        ["GraphsHelp", "Learnability"],
+        ["HNN", "MFCF"], ["HNN", "RelationalDL"], ["HNN", "Sparsity"], ["HNN", "AlgTopology"], ["HNN", "GNN"],
+        ["InteractionGraphs", "Hypergraphs"], ["InteractionGraphs", "Learnability"],
+        ["InteractionGraphs", "DistanceCorr"], ["InteractionGraphs", "SyntheticData"],
+        ["NNPruning", "Sparsity"], ["NNPruning", "ML"],
+        ["GSP", "Laplacian"], ["GNN", "ML"], ["Manifold", "ML"], ["Learnability", "ML"], ["KTrees", "Chordal"],
+
+        // signals
+        ["DFM", "Kalman"], ["DFM", "FactorModels"], ["DFM", "SyntheticData"],
+        ["Wavelets", "NonStationarity"], ["Wavelets", "Fourier"], ["OU", "SyntheticData"],
+
+        // finance
+        ["StrategyCorr", "Backtesting"], ["StrategyCorr", "MultipleTesting"], ["StrategyCorr", "CorrEstimation"],
+        ["StrategyCorr", "Breadth"], ["StrategyCorr", "OU"], ["StrategyCorr", "FactorModels"],
+        ["StrategyCorr", "TSClustering"],
+        ["Portfolio", "Diversification"], ["Portfolio", "HRP"], ["Portfolio", "MinVar"], ["HRP", "Agglomerative"],
+        ["Bandits", "ML"], ["Bandits", "Backtesting"], ["Microstructure", "InteractingAgents"],
+
+        // complexity
+        ["IsingFin", "Ising"], ["IsingFin", "Collective"], ["IsingFin", "ABM"], ["IsingFin", "InteractingAgents"],
+        ["Matchups", "GameTheory"], ["Matchups", "EvolvingNetworks"], ["Matchups", "Boltzmann"],
+        ["Matchups", "TMFG"], ["Matchups", "ABM"],
+        ["TxFlow", "FinNetworks"], ["TxFlow", "CreditRisk"], ["TxFlow", "StressTesting"], ["TxFlow", "ABM"],
+        ["TxFlow", "SystemicRisk"],
+        ["ECIInvest", "ECI"], ["ECIInvest", "ABM"], ["ECIInvest", "SyntheticData"],
+        ["SystemicRisk", "FinNetworks"], ["InteractingAgents", "EvolvingNetworks"], ["FinNetworks", "LeadLag"]
+    ];
+
+    const STATUS = { published: "Published", preprint: "Preprint", post: "Blog post", ongoing: "In progress" };
+    const TYPE   = { center: "", thesis: "Dissertation", theme: "Research theme", project: "Project", concept: "Concept" };
+    const RADIUS = { center: 24, thesis: 14, theme: 17, project: 11, concept: 5.5 };
+    const PRIORITY = { center: 0, thesis: 1, project: 2, concept: 3 };
+
+    /* =====================================================================
+       2. BUILD GRAPH
+       ===================================================================== */
+    const wrapper = document.getElementById("graph-container");
+    if (typeof d3 === "undefined") {
+        wrapper.insertAdjacentHTML("beforeend", '<p style="padding:1em;color:#94a3b8">The graph could not load.</p>');
+        return;
+    }
+
+    const themeById = new Map(THEMES.map(t => [t.id, t]));
+    const nodes = [], byId = new Map();
+    const addNode = n => { n.themes = [].concat(n.theme || []); n.r = RADIUS[n.type]; nodes.push(n); byId.set(n.id, n); };
+
+    addNode({ ...CENTER });
+    THEMES.forEach(t => addNode({ id: t.id, label: t.label, type: "theme", theme: t.id, desc: t.desc }));
+    NODES.forEach(n => addNode({ ...n }));
+
+    const links = [], linkKeys = new Set();
+    function addLink(a, b, kind) {
+        if (!byId.has(a) || !byId.has(b)) { console.warn("[graph] unknown node in link:", a, b); return; }
+        const key = a < b ? a + "|" + b : b + "|" + a;
+        if (a === b || linkKeys.has(key)) return;
+        linkKeys.add(key);
+        links.push({ source: a, target: b, kind });
+    }
+    const home = id => byId.get(id).themes[0];
+
+    THEMES.forEach(t => addLink("Core", t.id, "spoke"));
+    nodes.filter(n => n.type === "project").forEach(n => n.themes.forEach(t => addLink(n.id, t, "hub")));
+    LINKS.forEach(([a, b]) => addLink(a, b, "edge"));
+    // Concepts with no edge inside their own cluster get attached to their theme hub
+    nodes.filter(n => n.type === "concept").forEach(n => {
+        const ok = links.some(l => (l.source === n.id && home(l.target) === home(n.id)) ||
+                                   (l.target === n.id && home(l.source) === home(n.id)));
+        if (!ok) addLink(n.id, n.themes[0], "hub");
+    });
+    links.forEach(l => {
+        const a = home(l.source), b = home(l.target);
+        l.cross = l.kind !== "spoke" && !(a && a === b);
+        l.color = l.cross ? null : themeById.get(a)?.color;
+    });
+
+    const adjacency = new Map(nodes.map(n => [n.id, new Set([n.id])]));
+    links.forEach(l => { adjacency.get(l.source).add(l.target); adjacency.get(l.target).add(l.source); });
+
+    const colorOf = n => n.type === "center" ? "#f8fafc" : n.type === "thesis" ? "#e2e8f0" : themeById.get(n.themes[0]).color;
+
+    /* ---- cluster anchors on an ellipse matching the container's aspect ---- */
+    const aspect = Math.max(0.55, Math.min(1.8, (wrapper.clientWidth || 1000) / (wrapper.clientHeight || 700)));
+    const R = 410, rx = R * Math.sqrt(aspect), ry = R / Math.sqrt(aspect);
+    const anchors = new Map(THEMES.map((t, i) => {
+        const a = -Math.PI / 2 + (i * 2 * Math.PI) / THEMES.length;
+        return [t.id, [rx * Math.cos(a), ry * Math.sin(a)]];
+    }));
+    nodes.forEach(n => {
+        if (!n.themes.length) { n.tx = 0; n.ty = 0; }
+        else {
+            const w = n.themes.map((_, i) => (i === 0 ? (n.themes.length === 1 ? 1 : 0.62) : 0.38 / (n.themes.length - 1)));
+            n.tx = d3.sum(n.themes, (t, i) => w[i] * anchors.get(t)[0]);
+            n.ty = d3.sum(n.themes, (t, i) => w[i] * anchors.get(t)[1]);
+        }
+        n.x = n.tx + (Math.random() - 0.5) * 90;
+        n.y = n.ty + (Math.random() - 0.5) * 90;
+    });
+    const core = byId.get("Core"); core.fx = 0; core.fy = 0;
+    const thesis = byId.get("Thesis"); if (thesis) { thesis.tx = 0; thesis.ty = 95; thesis.x = 0; thesis.y = 95; }
+
+    /* =====================================================================
+       3. RENDER
+       ===================================================================== */
     const svg = d3.select("#project-network");
-    const wrapper = document.getElementById('graph-container');
-    
-    const simulation = d3.forceSimulation(data.nodes)
-        .force("link", d3.forceLink(data.links).id(d => d.id).distance(130))
-        .force("charge", d3.forceManyBody().strength(-600))
-        .force("x", d3.forceX(wrapper.clientWidth / 2).strength(0.1))
-        .force("y", d3.forceY(wrapper.clientHeight / 2).strength(0.1));
+    const svgEl = svg.node();
+    const viewport = svg.append("g");
+    const hullLayer = viewport.append("g");
+    const linkLayer = viewport.append("g");
+    const nodeLayer = viewport.append("g");
+    const regionLayer = viewport.append("g");
 
-    const link = svg.append("g")
-        .selectAll("line")
-        .data(data.links)
-        .join("line")
-        .attr("class", "link")
-        .attr("stroke-width", 1.5);
+    const hullNodes = new Map(THEMES.map(t => [t.id, nodes.filter(n => n.themes[0] === t.id)]));
+    const hull = hullLayer.selectAll("path")
+        .data(THEMES).join("path")
+        .attr("class", "hull")
+        .attr("fill", t => t.color).attr("stroke", t => t.color);
+    const hullLine = d3.line().curve(d3.curveCatmullRomClosed.alpha(0.6));
 
-    const node = svg.append("g")
-        .selectAll(".node")
-        .data(data.nodes)
-        .join("g")
-        .attr("class", d => `node node-${d.group}`)
-        .call(d3.drag()
-            .on("start", (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
-            .on("drag", (e, d) => { d.fx = e.x; d.fy = e.y; })
-            .on("end", (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }))
-        .on("click", (e, d) => { if (d.url !== "#") window.location.href = d.url; });
+    const link = linkLayer.selectAll("line")
+        .data(links).join("line")
+        .attr("class", l => `link ${l.kind}${l.cross ? " cross" : ""}`)
+        .attr("stroke", l => l.color || null);
+
+    const node = nodeLayer.selectAll(".node")
+        .data(nodes).join("g")
+        .attr("class", d => `node node-${d.type}${d.status === "ongoing" ? " ongoing" : ""}`);
 
     node.append("circle")
-        .attr("r", d => d.radius)
-        .attr("fill", d => {
-            if (d.group === "center") return "#38bdf8";
-            if (d.group === "project") return "#818cf8";
-            return "#fbbf24";
-        });
+        .attr("r", d => d.r)
+        .attr("fill", colorOf)
+        .style("stroke", d => (d.status === "ongoing" ? colorOf(d) : null));
 
-    node.append("text")
-        .text(d => d.label)
-        .attr("dx", d => d.radius + 8)
-        .attr("dy", 5);
+    const label = node.filter(d => d.type !== "theme").append("text")
+        .text(d => d.label);
+    const labelled = nodes.filter(d => d.type !== "theme")
+        .sort((a, b) => PRIORITY[a.type] - PRIORITY[b.type]);   // big labels claim space first
 
-    simulation.on("tick", () => {
+    const region = regionLayer.selectAll("text")
+        .data(THEMES).join("text")
+        .attr("class", "region-label")
+        .attr("fill", t => t.color)
+        .text(t => t.label.toUpperCase());
+    region.attr("text-anchor", "middle").each(function (t) {
+        t.textEl = this;
+        t.prefer = anchors.get(t.id)[1] > 1 ? "below" : "above";   // default: outward
+    });
+
+    /* ---- overlay UI ---- */
+    const ui = d3.select(wrapper);
+    const legend = ui.append("div").attr("class", "kg-panel kg-legend")
+        .html(`<details ${wrapper.clientWidth < 640 ? "" : "open"}><summary>Themes</summary><ul></ul>
+               <div class="kg-key"><span><i class="fill"></i>Published / post</span><span><i class="ring"></i>In progress</span></div></details>`);
+    const legendItems = legend.select("ul").selectAll("li").data(THEMES).join("li")
+        .append("button").attr("type", "button")
+        .html(t => `<span class="kg-dot" style="background:${t.color}"></span>${t.label}`)
+        .on("click", (e, t) => selectTheme(t.id));
+
+    const tools = ui.append("div").attr("class", "kg-panel kg-tools");
+    const search = tools.append("input").attr("type", "search").attr("placeholder", "Search…").attr("aria-label", "Search the graph");
+    tools.append("button").attr("type", "button").attr("title", "Zoom in").text("+").on("click", () => zoomBy(1.4));
+    tools.append("button").attr("type", "button").attr("title", "Zoom out").text("−").on("click", () => zoomBy(1 / 1.4));
+    tools.append("button").attr("type", "button").attr("title", "Fit graph").html("&#x2922;").on("click", () => fit(true));
+
+    const card = ui.append("div").attr("class", "kg-panel kg-card");
+    const hint = ui.append("div").attr("class", "kg-panel kg-hint").text(
+        /Mac|iPhone|iPad/.test(navigator.platform) ? "Hold ⌘ and scroll to zoom" : "Hold Ctrl and scroll to zoom");
+
+    /* =====================================================================
+       4. SIMULATION
+       ===================================================================== */
+    const simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id)
+            .distance(l => l.kind === "spoke" ? 300 : l.kind === "hub" ? (l.source.type === "project" ? 88 : 68)
+                                                   : l.cross ? 140 : 58)
+            .strength(l => l.kind === "spoke" ? 0 : l.cross ? 0.05 : l.kind === "hub" ? 0.35 : 0.5))
+        .force("charge", d3.forceManyBody().strength(d => d.type === "project" ? -340 : -18 * d.r - 40).distanceMax(380))
+        .force("x", d3.forceX(d => d.tx).strength(d => d.type === "theme" ? 0.5 : d.type === "thesis" ? 0.3 : 0.07))
+        .force("y", d3.forceY(d => d.ty).strength(d => d.type === "theme" ? 0.5 : d.type === "thesis" ? 0.3 : 0.07))
+        .force("collide", d3.forceCollide(d => d.r + (d.type === "concept" ? 8 : d.type === "project" ? 22 : 14)).strength(0.85))
+        .stop();
+
+
+    function render() {
         link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
             .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
         node.attr("transform", d => `translate(${d.x},${d.y})`);
-    });
-
-    // Smart Highlight Logic
-    node.on("mouseover", (e, d) => {
-        node.transition().duration(200).style("opacity", n => (n === d || isNeighbor(d, n)) ? 1 : 0.2);
-        link.transition().duration(200).style("stroke-opacity", l => (l.source === d || l.target === d) ? 1 : 0.1)
-            .style("stroke", l => (l.source === d || l.target === d) ? "#60a5fa" : "rgba(150,150,150,0.2)");
-    }).on("mouseout", () => {
-        node.transition().duration(200).style("opacity", 1);
-        link.transition().duration(200).style("stroke-opacity", 0.4).style("stroke", "rgba(150,150,150,0.2)");
-    });
-
-    function isNeighbor(a, b) {
-        return data.links.some(l => (l.source.id === a.id && l.target.id === b.id) || (l.source.id === b.id && l.target.id === a.id));
+        hull.attr("d", t => {
+            const pts = [];
+            hullNodes.get(t.id).forEach(n => {
+                const pad = n.r + 24;
+                for (let k = 0; k < 8; k++) pts.push([n.x + pad * Math.cos(k * Math.PI / 4), n.y + pad * Math.sin(k * Math.PI / 4)]);
+            });
+            const h = d3.polygonHull(pts);
+            return h ? hullLine(h) : null;
+        });
+        layoutLabels(lsOf(currentK));
     }
+
+    /* ---- label placement: each label takes the side (right/left/above/below) with least overlap ---- */
+    const lsOf = k => Math.min(2.6, Math.max(0.7, 1 / k));      // labels keep ~constant on-screen size
+    let currentK = 1;
+
+    function measureLabels() {
+        const prev = svgEl.style.getPropertyValue("--ls");
+        svgEl.style.setProperty("--ls", 1);
+        label.each(function (d) { d.tw = this.getComputedTextLength(); d.th = parseFloat(getComputedStyle(this).fontSize) || 13; });
+        region.each(function (t) { t.tw = this.getComputedTextLength(); t.th = parseFloat(getComputedStyle(this).fontSize) || 14; });
+        svgEl.style.setProperty("--ls", prev || 1);
+    }
+
+    function labelBox(d, side, ls) {
+        const w = d.tw * ls, h = d.th * ls * 1.1, g = d.r + 4;
+        if (side === "R") return [d.x + g, d.y - h / 2, d.x + g + w, d.y + h / 2];
+        if (side === "L") return [d.x - g - w, d.y - h / 2, d.x - g, d.y + h / 2];
+        if (side === "T") return [d.x - w / 2, d.y - g - h, d.x + w / 2, d.y - g];
+        return [d.x - w / 2, d.y + g, d.x + w / 2, d.y + g + h];
+    }
+    const overlap = (a, b) =>
+        Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1]));
+
+    let highlightActive = false;
+    function layoutLabels(ls) {
+        const placed = [];
+        const circles = nodes.map(n => [n.x - n.r, n.y - n.r, n.x + n.r, n.y + n.r, n]);
+        const zoomed = svg.classed("zoomed");
+        // a label counts as an obstacle only if it is actually shown
+        const shown = d => (highlightActive ? d.hl : d.type !== "concept" || zoomed);
+        const order = highlightActive ? labelled.filter(d => d.hl).concat(labelled.filter(d => !d.hl)) : labelled;
+        order.forEach(d => {
+            if (highlightActive && !d.hl && d.side) { d.box = labelBox(d, d.side, ls); return; }   // dimmed: leave as is
+            const outward = d.x < -25 ? "L" : "R";
+            let best = null, bestScore = Infinity;
+            for (const side of ["R", "L", "T", "B"]) {
+                const box = labelBox(d, side, ls);
+                let score = (side === outward ? 0 : side === "T" || side === "B" ? 30 : 15) * ls * ls;
+                for (const p of placed) score += overlap(box, p);
+                for (const c of circles) if (c[4] !== d) score += 2 * overlap(box, c);
+                if (side === d.side) score *= 0.85;                    // hysteresis: avoid flicker
+                if (score < bestScore) { bestScore = score; best = side; }
+            }
+            if (best !== d.side) {
+                d.side = best;
+                const g = d.r + 4;
+                d3.select(d.textEl)
+                    .attr("text-anchor", best === "R" ? "start" : best === "L" ? "end" : "middle")
+                    .attr("x", best === "R" ? g : best === "L" ? -g : 0)
+                    .attr("y", best === "T" ? -g : best === "B" ? g : 0)
+                    .attr("dy", best === "T" ? "-0.3em" : best === "B" ? "0.95em" : "0.35em");
+            }
+            d.box = labelBox(d, d.side, ls);
+            if (shown(d)) placed.push(d.box);
+        });
+        // theme names: centred above or below their cluster, whichever side is less crowded
+        const regionBoxes = [];
+        THEMES.forEach(t => {
+            let top = Infinity, bottom = -Infinity;
+            hullNodes.get(t.id).forEach(n => {
+                top = Math.min(top, n.y - n.r); bottom = Math.max(bottom, n.y + n.r);
+                if (n.box && (n.type !== "concept" || zoomed)) { top = Math.min(top, n.box[1]); bottom = Math.max(bottom, n.box[3]); }
+            });
+            const hub = byId.get(t.id), w = t.tw * ls, h = t.th * ls, gap = 14 * ls;
+            const cand = {
+                above: [hub.x - w / 2, top - gap - h, hub.x + w / 2, top - gap],
+                below: [hub.x - w / 2, bottom + gap, hub.x + w / 2, bottom + gap + h]
+            };
+            let best = null, bestScore = Infinity;
+            for (const side of ["above", "below"]) {
+                let score = (side === t.prefer ? 0 : 40) * ls * ls;
+                for (const p of placed) score += overlap(cand[side], p);
+                for (const p of regionBoxes) score += 3 * overlap(cand[side], p);
+                for (const c of circles) score += 2 * overlap(cand[side], c);
+                if (side === t.valign) score *= 0.85;
+                if (score < bestScore) { bestScore = score; best = side; }
+            }
+            if (best !== t.valign) { t.valign = best; t.textEl.setAttribute("dy", best === "below" ? "0.8em" : "0em"); }
+            t.box = cand[best];
+            t.lx = hub.x;
+            t.ly = best === "below" ? bottom + gap : top - gap;
+            regionBoxes.push(t.box);
+        });
+        region.attr("x", t => t.lx).attr("y", t => t.ly);
+    }
+
+    label.each(function (d) { d.textEl = this; });
+    measureLabels();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { measureLabels(); render(); });
+    simulation.tick(260);   // settle off-screen so the first frame already looks calm
+    render();
+    simulation.on("tick", render);
+
+    node.call(d3.drag()
+        .on("start", (e, d) => { if (!e.active) simulation.alphaTarget(0.25).restart(); d.fx = d.x; d.fy = d.y; })
+        .on("drag",  (e, d) => { d.fx = e.x; d.fy = e.y; })
+        .on("end",   (e, d) => {
+            if (!e.active) simulation.alphaTarget(0);
+            if (d.type === "center") { d.fx = 0; d.fy = 0; } else { d.fx = null; d.fy = null; }
+        }));
+
+    /* =====================================================================
+       5. ZOOM & PAN  (plain scrolling still scrolls the page)
+       ===================================================================== */
+    let fitK = 1, hintTimer = null;
+    const zoom = d3.zoom()
+        .scaleExtent([0.15, 5])
+        .filter(e => {
+            if (e.type === "wheel") {
+                if (e.ctrlKey || e.metaKey) return true;
+                hint.classed("show", true); clearTimeout(hintTimer);
+                hintTimer = setTimeout(() => hint.classed("show", false), 1200);
+                return false;
+            }
+            if (e.type === "touchstart") return e.touches.length > 1;
+            if (e.type === "dblclick") return false;
+            return !e.button;
+        })
+        .wheelDelta(e => {
+            let d = -e.deltaY * (e.deltaMode === 1 ? 0.05 : e.deltaMode ? 1 : 0.002);
+            if (e.ctrlKey && Math.abs(e.deltaY) < 40) d *= 8;     // trackpad pinch
+            return Math.max(-0.5, Math.min(0.5, d));
+        })
+        .on("zoom", e => {
+            viewport.attr("transform", e.transform);
+            const k = (currentK = e.transform.k);
+            svgEl.style.setProperty("--ls", lsOf(k).toFixed(3));
+            svg.classed("zoomed", k > fitK * 1.45 && k > 0.6);
+            svg.classed("overview", k < 0.42);
+            layoutLabels(lsOf(k));
+        });
+    svg.call(zoom);
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const ease = sel => (reduceMotion ? sel : sel.transition().duration(650));
+
+    function fit(animate) {
+        const W = wrapper.clientWidth, H = wrapper.clientHeight;
+        // keep clear of the legend when it is open on a wide screen
+        const left = W >= 900 && legend.select("details").property("open")
+            ? legend.node().getBoundingClientRect().width + 20 : 0;
+        const top = left ? 0 : 52;
+        const aw = W - left, ah = H - top;
+        let k = currentK, x0, x1, y0, y1;
+        for (let i = 0; i < 4; i++) {          // label sizes depend on zoom, so iterate to a fixed point
+            const ls = lsOf(k);
+            layoutLabels(ls);
+            x0 = y0 = Infinity; x1 = y1 = -Infinity;
+            const grow = b => { x0 = Math.min(x0, b[0]); y0 = Math.min(y0, b[1]); x1 = Math.max(x1, b[2]); y1 = Math.max(y1, b[3]); };
+            nodes.forEach(n => {
+                grow([n.x - n.r, n.y - n.r, n.x + n.r, n.y + n.r]);
+                if (n.box && n.type !== "concept" && !(k < 0.42 && n.type !== "center")) grow(n.box);
+            });
+            THEMES.forEach(t => grow(t.box));
+            k = Math.max(0.15, Math.min(1.6, 0.96 * Math.min(aw / (x1 - x0), ah / (y1 - y0))));
+        }
+        fitK = k;
+        const t = d3.zoomIdentity.translate(left + aw / 2, top + ah / 2).scale(k).translate(-(x0 + x1) / 2, -(y0 + y1) / 2);
+        (animate ? ease(svg) : svg).call(zoom.transform, t);
+    }
+    const zoomBy = f => ease(svg).call(zoom.scaleBy, f);
+
+    // Zoom so that a group of nodes fills the view (used when a theme is selected)
+    function zoomToNodes(list) {
+        const W = wrapper.clientWidth, H = wrapper.clientHeight;
+        const left = W >= 900 && legend.select("details").property("open")
+            ? legend.node().getBoundingClientRect().width + 20 : 0;
+        const aw = W - left - 220, ah = H - 160;                   // screen margin for labels
+        const [x0, x1] = d3.extent(list, n => n.x), [y0, y1] = d3.extent(list, n => n.y);
+        const k = Math.max(fitK, Math.min(2.4, Math.min(aw / (x1 - x0 + 40), ah / (y1 - y0 + 40))));
+        ease(svg).call(zoom.transform, d3.zoomIdentity
+            .translate(left + (W - left) / 2, H / 2).scale(k).translate(-(x0 + x1) / 2, -(y0 + y1) / 2));
+    }
+    function selectTheme(id) {
+        themeFocus = themeFocus === id ? null : id;
+        focus = null;
+        applyState();
+        if (themeFocus) zoomToNodes(nodes.filter(n => n.themes.includes(themeFocus)));
+        else fit(true);
+    }
+    legend.select("details").on("toggle", () => fit(true));
+    fit(false);
+    simulation.alpha(0.12).restart();   // a gentle final settle on screen
+
+    let resizeTimer;
+    new ResizeObserver(() => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => fit(true), 200); }).observe(wrapper);
+
+    /* =====================================================================
+       6. HIGHLIGHT, FOCUS, SEARCH, INFO CARD
+       ===================================================================== */
+    let hoverNode = null, focus = null, themeFocus = null, query = "", lastPointer = "mouse";
+    wrapper.addEventListener("pointerdown", e => { lastPointer = e.pointerType || "mouse"; }, true);
+
+    function setHighlight(nodeSet, linkTest) {
+        svg.classed("has-highlight", !!nodeSet);
+        region.classed("hl", t => !!nodeSet && nodeSet.has(t.id));
+        node.classed("hl", d => (d.hl = !!nodeSet && nodeSet.has(d.id)));
+        link.classed("hl", l => !!nodeSet && linkTest(l));
+        highlightActive = !!nodeSet;
+        layoutLabels(lsOf(currentK));
+    }
+
+    function applyState() {
+        const n = hoverNode || focus;
+        legendItems.classed("active", t => t.id === themeFocus);
+        if (n) {
+            const nb = adjacency.get(n.id);
+            setHighlight(nb, l => l.source === n || l.target === n);
+            showCard(n);
+        } else if (themeFocus) {
+            const set = new Set([themeFocus]);
+            nodes.forEach(d => { if (d.themes.includes(themeFocus)) set.add(d.id); });
+            setHighlight(set, l => set.has(l.source.id) && set.has(l.target.id) && l.kind !== "spoke");
+            showCard(byId.get(themeFocus));
+        } else if (query.length > 1) {
+            const set = new Set(nodes.filter(d => (d.label + " " + (d.desc || "")).toLowerCase().includes(query)).map(d => d.id));
+            setHighlight(set, l => set.has(l.source.id) && set.has(l.target.id));
+            showDefault(set.size ? `${set.size} match${set.size > 1 ? "es" : ""} — press Enter to jump to the first.` : "No matches.");
+        } else {
+            setHighlight(null);
+            showDefault();
+        }
+    }
+
+    function linkFor(n) {
+        if (!n.url || n.url === "#" || n.type === "center") return "";
+        const ext = /^https?:/.test(n.url);
+        const text = /arxiv\.org/.test(n.url) ? "Read on arXiv" : ext ? "Open link" : "Read the post";
+        return ` <a href="${n.url}"${ext ? ' target="_blank" rel="noopener"' : ""}>${text} →</a>`;
+    }
+
+    function showCard(n) {
+        const theme = n.themes.length ? n.themes.map(t => themeById.get(t).label).join(" · ") : "";
+        const meta = [TYPE[n.type], STATUS[n.status], n.type !== "theme" ? theme : null,
+                      `${adjacency.get(n.id).size - 1} connections`].filter(Boolean).join("  ·  ");
+        card.html(`<div class="title" style="color:${n.type === "center" ? "#f8fafc" : colorOf(n)}">${n.label}</div>
+                   <div class="meta">${meta}</div>
+                   ${n.desc ? `<div class="desc">${n.desc}${linkFor(n)}</div>` : (linkFor(n) ? `<div class="desc">${linkFor(n)}</div>` : "")}`);
+    }
+
+    function showDefault(msg) {
+        const touch = lastPointer === "touch";
+        card.html(`<div class="hint">${msg || (touch
+            ? "Tap a node to explore its neighbourhood · two fingers to zoom."
+            : "Hover to explore · click posts &amp; papers to open them · drag to pan · Ctrl/⌘ + scroll to zoom.")}</div>`);
+    }
+
+    function go(n) {
+        if (/^https?:/.test(n.url)) window.open(n.url, "_blank", "noopener");
+        else window.location.href = n.url;
+    }
+
+    node.on("pointerenter", (e, d) => { if (e.pointerType !== "mouse") return; hoverNode = d; applyState(); })
+        .on("pointerleave", (e)    => { if (e.pointerType !== "mouse") return; hoverNode = null; applyState(); })
+        .on("click", (e, d) => {
+            e.stopPropagation();
+            const touch = lastPointer !== "mouse";
+            const hasUrl = d.url && d.url !== "#" && d.type !== "center";
+            if (hasUrl && (!touch || focus === d)) return go(d);   // touch: first tap previews, second tap opens
+            if (d.type === "theme") return selectTheme(d.id);
+            focus = focus === d ? null : d; themeFocus = null;
+            hoverNode = touch ? null : hoverNode;
+            applyState();
+        });
+
+    svg.on("click", e => {
+        if (e.target === svgEl || e.target.classList.contains("hull")) {
+            const hadTheme = !!themeFocus;
+            focus = null; themeFocus = null; applyState();
+            if (hadTheme) fit(true);
+        }
+    });
+
+    search.on("input", e => { query = e.target.value.trim().toLowerCase(); focus = null; themeFocus = null; applyState(); })
+          .on("keydown", e => {
+              if (e.key === "Escape") { e.target.value = ""; query = ""; applyState(); return; }
+              if (e.key !== "Enter" || query.length < 2) return;
+              const m = nodes.find(d => (d.label + " " + (d.desc || "")).toLowerCase().includes(query));
+              if (!m) return;
+              focus = m; applyState();
+              ease(svg).call(zoom.transform, d3.zoomIdentity
+                  .translate(wrapper.clientWidth / 2, wrapper.clientHeight / 2)
+                  .scale(Math.max(fitK * 1.6, d3.zoomTransform(svgEl).k)).translate(-m.x, -m.y));
+          });
+
+    applyState();
 })();
 </script>
